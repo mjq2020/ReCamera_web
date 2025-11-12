@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 亮色主题（默认） */
+body[data-theme="light"] {
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #fafafa;
+  --text-primary: #2c3e50;
+  --text-secondary: #7f8c8d;
+  --text-tertiary: #34495e;
+  --border-color: #ecf0f1;
+  --border-color-secondary: #ddd;
+  --sidebar-bg: #2c3e50;
+  --sidebar-text: #ecf0f1;
+  --sidebar-hover: #34495e;
+  --sidebar-active: #3498db;
+  --header-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --button-primary: #3498db;
+  --button-primary-hover: #2980b9;
+  --button-secondary: #95a5a6;
+  --button-secondary-hover: #7f8c8d;
+  --button-danger: #e74c3c;
+  --button-danger-hover: #c0392b;
+  --input-border: #ddd;
+  --input-focus: #3498db;
+  --status-online-bg: #d4edda;
+  --status-online-text: #155724;
+  --progress-bg: #ecf0f1;
+  --progress-fill: linear-gradient(90deg, #3498db, #2980b9);
+  --table-hover: #f8f9fa;
+  --terminal-bg: #1e1e1e;
+  --terminal-text: #d4d4d4;
+}
+
+/* 暗色主题 */
+body[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #242424;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-tertiary: #c0c0c0;
+  --border-color: #404040;
+  --border-color-secondary: #505050;
+  --sidebar-bg: #1e1e1e;
+  --sidebar-text: #e0e0e0;
+  --sidebar-hover: #2d2d2d;
+  --sidebar-active: #3498db;
+  --header-bg: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  --card-shadow: rgba(0, 0, 0, 0.5);
+  --button-primary: #3498db;
+  --button-primary-hover: #2980b9;
+  --button-secondary: #6c757d;
+  --button-secondary-hover: #5a6268;
+  --button-danger: #e74c3c;
+  --button-danger-hover: #c0392b;
+  --input-border: #505050;
+  --input-focus: #3498db;
+  --status-online-bg: #1e4620;
+  --status-online-text: #5cb85c;
+  --progress-bg: #404040;
+  --progress-fill: linear-gradient(90deg, #3498db, #2980b9);
+  --table-hover: #383838;
+  --terminal-bg: #0d0d0d;
+  --terminal-text: #d4d4d4;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+

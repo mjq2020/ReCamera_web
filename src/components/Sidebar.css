@@ -1,0 +1,51 @@
+.sidebar {
+  width: 250px;
+  background-color: var(--sidebar-bg);
+  color: var(--sidebar-text);
+  box-shadow: 2px 0 8px var(--card-shadow);
+  overflow-y: auto;
+  transition: background-color 0.3s ease;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 0;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  color: var(--sidebar-text);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  font-size: 16px;
+  border-left: 4px solid transparent;
+}
+
+.sidebar-item:hover {
+  background-color: var(--sidebar-hover);
+  border-left-color: var(--sidebar-active);
+}
+
+.sidebar-item.active {
+  background-color: var(--sidebar-hover);
+  border-left-color: var(--sidebar-active);
+  color: var(--sidebar-active);
+}
+
+.sidebar-icon {
+  font-size: 20px;
+  margin-right: 12px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.sidebar-label {
+  font-weight: 500;
+}
+

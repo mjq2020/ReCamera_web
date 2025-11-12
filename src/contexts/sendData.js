@@ -1,0 +1,10 @@
+class SystemData{
+
+    sWanInfo = {
+
+    }
+
+    gWanInfo
+
+
+}
