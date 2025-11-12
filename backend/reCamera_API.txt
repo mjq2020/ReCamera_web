@@ -1,0 +1,1559 @@
+
+通用信息：
+基础URL：/cgi-bin/entry.cgi
+URL结构：/cgi-bin/entry.cgi/{api_category}/{resource}/{sub_resource}
+认证方式: JWT Token (通过Cookie传递)
+内容类型: application/json
+错误响应：
+当后端获取信息出错或者其他原因无法给出请求信息时按照以下格式给出响应
+{
+"status": 0,        状态码，供用户排查
+"message":"error description",  出错时前端显示
+}
+
+交互数据格式：
+json数据KEY的命名：首字母代表VALUE数据类型，i代表整型数据，f代表浮点，s代表字符串，l代表列表，d代表字典，KEY采用驼峰命名
+模拟后端地址：
+	测试：http://192.168.1.66:8000/docs 
+	文档：http://192.168.1.66:8000/redoc 
+
+
+认证
+
+1.登录
+URL:/system/system/login
+请求方法: POST
+响应格式: JSON
+PUT示例
+{
+  "sUserName": "admin",
+  "sPassword": "password"    sha256
+}
+
+响应示例:
+{
+  "iStatus": 0,   Int 登录状态 
+  "iAuth": 0,     Int 认证等级
+}
+
+认证Headers
+Cookie: token={jwt_token}
+
+一、设备信息
+
+1.基本信息：
+URL：/system/device-info
+请求方法：GET
+响应格式：JSON
+{
+"sSerialNumber": "RC1126B-20240101-001",     String 设备序列号
+"sFirmwareVersion": "V1.0.3_20250915", String 固件版本
+"sSensorModel": "SC850SL",               String sensor板型号
+"sBasePlateModel": "PoE",                String 底板型号
+}
+
+
+2.系统时间：
+1）功能：获取系统时间
+URL: /system/time
+请求方法：GET
+响应格式: JSON
+响应示例: 
+{
+"sMethod": "ntp/manual",
+"dNtpConfig":{        如果sMethod为ntp需要返回次字段
+    "sAddress":"",
+    "sPort":"99"
+}
+"iTimstamp": 13256456,     Int64 时间戳，秒级
+"sTimezone":"Asia/Shanghai",     String 时区城市
+"sTz":"UTC+8",                    String 时区
+}
+
+
+2）功能：更新系统时间
+URL：/system/time
+请求方法：PUT
+响应格式：JSON
+PUT示例：
+{
+"sMethod": "ntp/manual",
+"dNtpConfig":{        如果sMethod为ntp需要返回次字段
+    "sAddress":"",
+    "sPort":"99"
+}
+"iTimstamp": 13256456,     Int64 时间戳，秒级
+"sTimezone":"Asia/Shanghai",     String 时区城市
+"sTz":"UTC+8",                    String 时区
+}
+
+ 
+响应示例：
+{
+"iTimstemp": 13214645643,(long int),      Int64 时间戳
+"sTimezone":"Asia/Shanghai",        String 时间城市
+"sTz":"UTC+8"                     String 时区
+}
+ 
+
+3.系统状态
+功能：获取CPU NPU占用率
+URL：/system/resource-info
+请求方法：GET
+响应示例：
+{
+"iCpuUsage": 13, Int CPU使用率 范围0-100
+"iNpuUsage": 20, Int NPU使用率 范围0-100
+"iMemUsage":  30, Int NPU使用率 范围0-100
+"iStorageUsage": 50 Int STORAGE使用率 范围0-100
+
+}
+ 
+备注：频繁请求，
+4.网络信息
+功能：获取网络信息
+URL：/network/wlan
+请求方法：GET
+响应示例：
+{
+  "dIpv4": {
+    "sV4Address": "192.168.1.100",    IPv4地址
+    "sV4Gateway": "192.168.1.1",        ipv4网关地址
+    "sV4Method": "manual",            ip设置方式
+    "sV4Netmask": "255.255.255.0"      ipv4子网掩码
+  },
+  "dLink": {
+    "sDNS1": "8.8.8.8",            DNS地址
+    "sDNS2": "8.8.4.4",             DNS地址
+    "sAddress": "aa:bb:cc:dd:ee:ff",    MAC地址
+    "sInterface": "eth0",            网卡设备
+    "iPower": 1,                    
+    "sNicSpeed": "100baseT/Full"        网络速度
+  }
+}
+
+
+功能：更新网络信息
+URL：/network/wlan
+请求方法：PUT
+PUT示例：
+{
+    "dIpv4": {
+        "sV4Address": "192.168.1.123",
+        "sV4Gateway": "192.168.1.1",
+        "sV4Method": "manual",
+        "sV4Netmask": "255.255.255.0"
+    },
+    "dLink": {
+        "sDNS1": "8.8.8.8",
+        "sDNS2": "114.114.114.114",
+        "sNicSpeed": "Auto"
+    }
+    
+}
+ 
+5.WiFi
+功能：查询WiF状态
+URL：/network/wifi
+请求方法：GET
+响应示例：
+{
+  "iPower": 1,    Int 是否处于开启状态
+  "iId": 1,        Int 
+  "sType": "wifi"   String  类型
+}
+ 
+功能：获取WiFi信息
+URL：/network/wifi-list
+请求方法：GET
+响应示例：
+[
+    {
+        "sBssid": "9a:bb:99:12:1b:61",
+        "sFlags": "[WPA-PSK-CCMP+TKIP][WPA2-PSK-CCMP+TKIP][ESS]",
+        "iFrequency": 2412,
+        "iRssi": -21,
+        "sSsid": "Freeland2"
+        "sConnected": "false"
+        
+    },
+    {
+        "sBssid": "f0:b4:29:53:e4:15",
+        "sFlags": "[WPA2-PSK-CCMP][ESS]",
+        "iFrequency": 2417,
+        "iRssi": -23,
+        "sSsid": "Xiaomi_Youth"
+        "sConnected": "true"
+    },
+    {
+        "sBssid": "70:4d:7b:95:47:c0",
+        "sFlags": "[WPA2-PSK-CCMP][ESS]",
+        "iFrequency": 2462,
+        "iRssi": -35,
+        "sSsid": "asus_test"
+        "sConnected": "false"
+    }
+]
+ 
+功能：扫描WiFi
+URL：/network/wifi
+请求方法：POST
+Param：
+参数名	值	备注
+scan	3	表示返回前多少个WiFi信息
+响应示例：
+[
+    {
+        "sBssid": "9a:bb:99:12:1b:61",
+        "sFlags": "[WPA-PSK-CCMP+TKIP][WPA2-PSK-CCMP+TKIP][ESS]",
+        "iFrequency": 2412,
+        "iRssi": -21,
+        "sSsid": "Freeland2",
+        "sConnected":"false"    是否已连接
+    },
+    {
+        "sBssid": "f0:b4:29:53:e4:15",
+        "sFlags": "[WPA2-PSK-CCMP][ESS]",
+        "iFrequency": 2417,
+        "iRssi": -23,
+        "sSsid": "Xiaomi_Youth",
+         "sConnected":"false"    是否已连接
+    },
+    {
+        "sBssid": "70:4d:7b:95:47:c0",
+        "sFlags": "[WPA2-PSK-CCMP][ESS]",
+        "iFrequency": 2462,
+        "iRssi": -35,
+        "sSsid": "asus_test",
+         "sConnected":"false"    是否已连接
+    }
+]
+
+ 
+功能：连接WiFi
+URL：/network/wifi
+请求方法：POST
+请求示例：
+{
+  "sName": "WiFiBSSID",                    wifi的唯一标识符非WiFi名
+  "sPassword": "password123"                WiFi密码，暂定明文，根据后端加密方式前端可修改
+}
+
+ 
+响应示例：
+{
+"status": 0,                    连接成功为0，
+"message":"error description",  如果连接失败提供失败原因
+}
+
+ 
+功能：WiFi网络断开
+URL：/network/wifi
+请求方法：DELETE
+Param：
+参数名	值	备注
+service	bssid	WiFi ssid
+功能：WiFi电源控制
+URL：/network/wifi
+请求方法：POST
+Param：
+参数名	值	备注
+power	on/off	on为开启电源，off为关闭电源
+
+6.组播
+功能：获取当前组播配置
+URL:/network/muticast
+请求方法：GET
+响应实例：
+{
+"muticastAddress": "224.1.1.1",    String  组播地址
+"muticastPort": "8868"           String  组播端口
+}
+
+ 
+功能：组播设置
+URL：/network/multicast
+请求方法：POST
+请求示例：
+{
+"muticastAddress": "224.1.1.1",    String  组播地址
+"muticastPort": "8868"           String  组播端口
+}
+ 
+7.HTTP
+功能：获取当前HTTP API设置
+URL：/web/setting
+请求方法：GET
+响应示例：
+{
+"sEnable": "true",            是否可用
+"sApiPort": "8080",          String API端口
+"sApiKey": "adfsfgfvxcvb"  String 访问密钥
+}
+
+
+功能：HTTP API设置
+URL：/web/setting
+请求方法：POST
+请求示例：
+{
+"sEnable": "true",            是否可用，
+"sApiPort": "8080",          String API端口
+"sApiKey": "adfsfgfvxcvb"  String 访问密钥
+}
+ 
+8.FTP服务
+功能：获取当前FTP服务设置
+URL：/ftp/setting
+请求方法：POST
+请求示例：
+{
+"sEnabel":"true"                是否可用，
+"sFtpPort":  "1234",             String 端口号          
+"sFtpUser":   "uername",         String 用户名
+"sFtpPassword": "adfafadfa"   String SHA256哈希后的值
+}
+
+ 
+
+功能：FTP服务设置
+URL：/ftp/setting
+请求方法：POST
+请求示例：
+{
+"sEnabel":"true"                  是否可用，
+"sFtpPort":  "1234",             String 端口号          
+"sFtpUser":   "uername",         String 用户名
+"sFtpPassword": "adfafadfa"   String SHA256哈希后的值
+}
+ 
+9.配置管理
+功能：导出配置
+URL：/config/export
+请求方法：GET
+Content-Type: application/json
+
+功能：导入配置
+URL：/config/upload
+请求方法：POST
+Content-Type: application/json
+
+10.固件管理
+功能：固件更新上传
+URL：/system/firmware-upgrade
+请求方法：POST
+Param:
+参数名	值	备注
+upload-type	resumable/network	resumable为从本地上传附件network为从网络获取更新固件
+
+upload-type = network
+响应示例:
+{
+	"iUpdateAvailable": 1,        Int 是否可以更新
+	"sCurrentVersion": "V1.0.0",    String 当前固件版本
+	"sLatestVersion": "V1.1.0",     String 最新固件版本
+    "sToken":   "xxxxxxxxxx"     String 短期验证令牌包
+} 
+
+
+
+功能: 确认远程更新
+URL: /system/firmware-network
+请求方法：POST
+Content-Type: application/json
+{
+    "sToken": "xxxxxxxxx",     String 验证令牌包
+    "sStart": "on/off"    String 是否更新
+}
+
+
+upload-type = resumable(前端二次确认)
+Content-Type: multipart/form-data
+11.重启设备
+功能：重启设备
+URL：/system/reboot
+请求方法：POST
+响应:无
+
+12.恢复出厂设置
+功能：恢复出厂设置
+URL：/system/factory-reset
+请求方法：POST
+响应：无
+
+13.修改密码
+功能：修改密码
+URL:/system/password
+请求方法：PUT
+请求示例：
+{
+"sOldPassword":"adfafgfga",    String 旧密码SHA256哈希值
+"sNewPassword":"adfadfzcv"     String 新密码SHA256哈希值
+}
+ 
+二、实时画面
+1.视频设置
+
+URL结构：/video/{stream_id}/{specific}
+stream_id 
+●0 :  主码流
+●1： 子码流
+
+specific 分类
+URL	 说明
+/video/0/encode	主码流视频编码配置
+/video/0/osd-char	主码流视频osd 字符配置， 设备名、通道， 时间配置
+/video/0/osd-inference	主码流视频osd 推理结果显示配置
+/video/0/osd-mask	主码流视频osd 遮盖配置
+/video/0/stream	主码流视频推流配置
+
+1.1 视频编码
+功能：获取视频流编码配置
+URL：/video/{stream_id}/encode
+请求方法：GET
+响应示例：
+{
+    "id": 0, //  0=主码流，1=子码流
+    "sStreamType": "mainStream", //, 码流类型/逻辑名称（mainStream / subStream)
+    "sResolution": "3840*2160", //编码输出分辨率（宽*高）
+    "sOutputDataType": "H.265", // 编码输出类型、编码标准, H.264、H.265
+    "sFrameRate": "30", //帧率
+    "iMaxRate": 8192, // 最大码率（kbps）
+    "iGOP": 60, // GOP(Group of Poctures)长度, 即 I 帧间隔,
+    "sRCMode": "VBR", //Rate Control Mode , 码率控制模式； CBR: 固定码率, VBR: 可变码率
+    "sRCQuality": "highest", // 可变码率时，质量等级  highest / high / medium / low
+    
+    //------ 以下配置预留------
+    "iMinRate": 0, // 预留，最小码率(kbps)
+    "iStreamSmooth": 50, // 预留, 码流平滑度参数
+    "iTargetRate": 0, //预留, 目标码率（kbps）
+    "sFrameRateIn": "30", //预留, ：输入帧率
+    "sGOPMode": "normalP", //预留, GOP 模式
+    "sH264Profile": "high", //预留, H.264 Profile，编码复杂度: baseline/main/high
+    "sSmart": "open", //预留, 智能码率/智能编码开关（open/close）
+}
+ 
+
+功能：配置视频流编码参数
+URL：/video/{stream_id}/encode
+请求方法：PUT
+配置内容：
+{
+    "id": 0, //  0=主码流，1=子码流
+    "sStreamType": "mainStream", //, 码流类型/逻辑名称（mainStream / subStream)
+    "sResolution": "3840*2160", //编码输出分辨率（宽*高）
+    "sOutputDataType": "H.265", // 编码输出类型、编码标准, H.264、H.265
+    "sFrameRate": "30", //帧率
+    "iMaxRate": 8192, // 最大码率（kbps）
+    "iGOP": 60, // GOP(Group of Poctures)长度, 即 I 帧间隔,
+    "sRCMode": "VBR", //Rate Control Mode , 码率控制模式； CBR: 固定码率, VBR: 可变码率
+    "sRCQuality": "highest", // 可变码率时，质量等级  highest / high / medium / low    
+}
+
+
+
+
+1.2 OSD设置
+功能：获取视频流OSD 绘制参数
+URL：/video/{stream_id}/osd-char
+请求方法：GET
+响应示例：
+{
+    "attribute": {
+        "iOSDFontSize": 64, // 字体大小，取值:0, 16, 32, 48, 64, 其中0表示自适应
+        "sOSDFrontColor": "fff799", // 字体颜色，格式为RGB的十六进制表示法，例如：红色为"ff0000"
+        "sOSDFrontColorMode": "customize" // 字体颜色模式, 0=黑白自动, 1=自定义
+    },
+    "channelNameOverlay": {
+        "iEnabled": 1,  // 0=关闭, 1=开启
+        "iPositionX": 528, // 字体位置X坐标，单位为像素
+        "iPositionY": 458, // 字体位置Y坐标，单位为像素
+        "sChannelName": "reCamera 1126B" // 通道名称
+    },
+    "dateTimeOverlay": {
+        "iEnabled": 1, // 0=关闭, 1=开启
+        "iDisplayWeekEnabled": 1, // 0=不显示星期, 1=显示星期
+        "iPositionX": 50, // 字体位置X坐标，单位为像素
+        "iPositionY": 244, // 字体位置Y坐标，单位为像素
+        "sDateStyle": "CHR-YYYY-MM-DD", // 日期格式, "CHR-YYYY-MM-DD", "CHR-DD-MM-YYYY", "CHR-MM-DD-YYYY", "NUM-YYYY-MM-DD", "NUM-DD-MM-YYYY", "NUM-MM-DD-YYYY"
+        "sTimeStyle": "24hour" // 时间格式, "12hour", "24hour"
+    },
+    "SNOverlay": { // 设备读取自己的SN信息
+        "iEnabled": 1, // 0=关闭, 1=开启
+        "iPositionX": 50, // 字体位置X坐标，单位为像素
+        "iPositionY": 244 // 字体位置Y坐标，单位为像素
+    },
+    "normalizedScreenSize": {
+        "iNormalizedScreenHeight": 608, // web显示高度，单位为像素
+        "iNormalizedScreenWidth": 1080 // web显示宽度，单位为像素
+    }
+}
+
+
+
+
+功能：配置OSD 绘制参数
+URL：/video/{stream_id}/osd-char
+请求方法：PUT
+数据内容举例，全部配置
+{
+    "attribute": {
+        "iOSDFontSize": 64, // 字体大小，取值:0, 16, 32, 48, 64, 其中0表示自适应
+        "sOSDFrontColor": "fff799", // 字体颜色，格式为RGB的十六进制表示法，例如：红色为"ff0000"
+        "sOSDFrontColorMode": "customize" // 字体颜色模式, 0=黑白自动, 1=自定义
+    },
+    "channelNameOverlay": {
+        "iEnabled": 1,  // 0=关闭, 1=开启
+        "iPositionX": 528, // 字体位置X坐标，单位为像素
+        "iPositionY": 458, // 字体位置Y坐标，单位为像素
+        "sChannelName": "reCamera 1126B" // 通道名称
+    },
+    "dateTimeOverlay": {
+        "iEnabled": 1, // 0=关闭, 1=开启
+        "iDisplayWeekEnabled": 1, // 0=不显示星期, 1=显示星期
+        "iPositionX": 50, // 字体位置X坐标，单位为像素
+        "iPositionY": 244, // 字体位置Y坐标，单位为像素
+        "sDateStyle": "CHR-YYYY-MM-DD", // 日期格式, "CHR-YYYY-MM-DD", "CHR-DD-MM-YYYY", "CHR-MM-DD-YYYY", "NUM-YYYY-MM-DD", "NUM-DD-MM-YYYY", "NUM-MM-DD-YYYY"
+        "sTimeStyle": "24hour" // 时间格式, "12hour", "24hour"
+    },
+    "SNOverlay": { // 设备读取自己的SN信息
+        "iEnabled": 1, // 0=关闭, 1=开启
+        "iPositionX": 50, // 字体位置X坐标，单位为像素
+        "iPositionY": 244 // 字体位置Y坐标，单位为像素
+    },
+    "normalizedScreenSize": {
+        "iNormalizedScreenHeight": 608, // web显示高度，单位为像素
+        "iNormalizedScreenWidth": 1080 // web显示宽度，单位为像素
+    }
+}
+
+
+
+数据内容举例，部分修改
+{
+    "SNOverlay": { // 设备读取自己的SN信息
+        "iEnabled": 1, // 0=关闭, 1=开启
+        "iPositionX": 50, // 字体位置X坐标，单位为像素
+        "iPositionY": 244 // 字体位置Y坐标，单位为像素
+    }
+}
+
+
+
+备注说明:
+1.时间显示上， 对应显示星期几是用中文还是英文， 经过沟通之后，统一为英文
+2.
+1.3 AI 结果
+功能：获取视频流AI 结果绘制配置
+URL：/video/{stream_id}/osd-inference
+请求方法：GET
+响应示例：
+{
+    "inferenceOverlay": {
+         "iEnabled": 1, // 0=关闭, 1=开启
+    },
+}
+
+
+
+功能：配置视频流AI 结果绘制
+URL：/video/{stream_id}/osd-inference
+请求方法：POST
+数据内容：
+{
+    "inferenceOverlay": {
+         "iEnabled": 1, // 0=关闭, 1=开启
+    },
+}
+
+
+1.4 遮盖
+功能：获取视频流遮盖绘制配置
+URL：/video/{stream_id}/osd-mask
+请求方法：GET
+响应示例：
+{
+    "iEnabled": 1, // 0=关闭, 1=开启
+    "normalizedScreenSize": {
+        "iNormalizedScreenHeight": 608, // web显示高度，单位为像素
+        "iNormalizedScreenWidth": 1080 // web显示宽度，单位为像素
+    },
+    "privacyMask": [
+        {
+            "id": 0,           // 遮挡区域ID
+            "iMaskHeight": 77, // 遮挡区域高度，单位为像素
+            "iMaskWidth": 213, // 遮挡区域宽度，单位为像素
+            "iPositionX": 53,  // 遮挡区域左上角X坐标，单位为像素
+            "iPositionY": 380 // 遮挡区域左上角Y坐标，单位为像素
+        },
+        {
+            "id": 1,
+            "iMaskHeight": 0,
+            "iMaskWidth": 0,
+            "iPositionX": 0,
+            "iPositionY": 0
+        }
+    ]
+}
+
+
+
+功能：配置视频流遮盖绘制
+URL：/video/{stream_id}/osd-mask
+请求方法：POST
+数据内容：
+{
+    "iEnabled": 1, // 0=关闭, 1=开启
+    "normalizedScreenSize": {
+        "iNormalizedScreenHeight": 608, // web显示高度，单位为像素
+        "iNormalizedScreenWidth": 1080 // web显示宽度，单位为像素
+    },
+    "privacyMask": [
+        {
+            "id": 0,           // 遮挡区域ID
+            "iMaskHeight": 77, // 遮挡区域高度，单位为像素
+            "iMaskWidth": 213, // 遮挡区域宽度，单位为像素
+            "iPositionX": 53,  // 遮挡区域左上角X坐标，单位为像素
+            "iPositionY": 380, // 遮挡区域左上角Y坐标，单位为像素
+        }
+    ]
+}
+
+
+
+1.5 推流
+
+功能：获取视频流推流配置
+URL：/video/{stream_id}/stream
+请求方法：GET
+响应示例：
+{
+        //推流协议rtsp/rtmp/onvif
+        "streamProtocol": "rtsp",
+        //rtsp
+        "rtsp": {
+            "iPort": 8554
+        },
+        //rtmp
+        "rtmp": {
+            "sURL": "rtmp://xxx", //推流地址
+            "iAuthType": 0, //0-秘钥 1-用户密码
+            "sSecretKey": "xxxx", //秘钥
+            "sUserName": "admin",
+            "sPassword": "admin"
+        },
+        //onvif
+        "onvif": {
+            "sUserName": "admin",
+            "sPassword": "admin"
+        }
+}
+
+
+
+
+
+功能：配置视频流推流
+URL：/video/{stream_id}/stream
+请求方法：POST
+数据内容：
+{
+        //推流协议rtsp/rtmp/onvif
+        "streamProtocol": "rtsp",
+        //rtsp
+        "rtsp": {
+            "iPort": 8554
+        },
+        //rtmp
+        "rtmp": {
+            "sURL": "rtmp://xxx", //推流地址
+            "iAuthType": 0, //0-秘钥 1-用户密码
+            "sSecretKey": "xxxx", //秘钥
+            "sUserName": "admin",
+            "sPassword": "admin"
+        },
+        //onvif
+        "onvif": {
+            "sUserName": "admin",
+            "sPassword": "admin"
+        }
+}
+
+
+
+
+
+2.音频设置
+功能：获取音频编码相关信息， URL 中的id 0: 主码流的音频， 1:子码流的音频
+URL：/audio/<id>
+请求方法：GET
+响应示例：
+{
+    ""
+    "iEnable":1,  //Int32 使能音频编码
+    "iBitRate": 32000, //Int32 码率BPS
+    "sEncodeType": "G711A" // String 编码格式，G711A, G711U, OPUS
+}
+
+
+
+功能： 配置音频， URL 中的id 0: 主码流的音频， 1:子码流的音频
+URL：/audio/<id>
+请求方法：GET
+响应示例：
+{
+    "iEnable":1,  //Int32 使能音频编码
+    "iBitRate": 32000, //Int32 码率BPS
+    "sEncodeType": "G711A" // String 编码格式，可选有:G711A, G711U, OPUS
+}
+
+
+
+
+TODO: 编码格式需要哪几种确定
+
+附录: 支持的音频编码格式
+RK_AUDIO_ID_PCM_ALAW,    /** <g711a> */
+RK_AUDIO_ID_PCM_MULAW,   /** <g711u> */
+RK_AUDIO_ID_PCM_S16LE,   /**< Any variant of PCM_S16LE coding */
+RK_AUDIO_ID_PCM_S24LE,   /**< Any variant of PCM_S24LE coding */
+RK_AUDIO_ID_PCM_S32LE,   /**< Any variant of PCM_S32LE coding */
+RK_AUDIO_ID_ADPCM_G722,         /**< Any variant of ADPCM_G722 encoded data */
+RK_AUDIO_ID_ADPCM_G726,         /**< Any variant of ADPCM_G726 encoded data */
+RK_AUDIO_ID_ADPCM_G726LE,       /**< G.726 ADPCM little-endian encoded data*/
+RK_AUDIO_ID_ADPCM_IMA_QT,       /**< Any variant of ADPCM_IMA encoded data */
+RK_AUDIO_ID_AMR_NB,      /**< Any variant of AMR_NB encoded data */
+RK_AUDIO_ID_AMR_WB,      /**< Any variant of AMR_WB encoded data */
+RK_AUDIO_ID_GSMFR,       /**< Any variant of GSM fullrate (i.e. GSM610) */
+RK_AUDIO_ID_GSMEFR,      /**< Any variant of GSM Enhanced Fullrate encoded data*/
+RK_AUDIO_ID_GSMHR,       /**< Any variant of GSM Halfrate encoded data */
+RK_AUDIO_ID_PDCFR,       /**< Any variant of PDC Fullrate encoded data */
+RK_AUDIO_ID_PDCEFR,      /**< Any variant of PDC Enhanced Fullrate encoded data */
+RK_AUDIO_ID_PDCHR,       /**< Any variant of PDC Halfrate encoded data */
+RK_AUDIO_ID_TDMAFR,      /**< Any variant of TDMA Fullrate encoded data (TIA/EIA-136-420) */
+RK_AUDIO_ID_TDMAEFR,     /**< Any variant of TDMA Enhanced Fullrate encoded data (TIA/EIA-136-410) */
+RK_AUDIO_ID_QCELP8,      /**< Any variant of QCELP 8kbps encoded data */
+RK_AUDIO_ID_QCELP13,     /**< Any variant of QCELP 13kbps encoded data */
+RK_AUDIO_ID_EVRC,        /**< Any variant of EVRC encoded data */
+RK_AUDIO_ID_SMV,         /**< Any variant of SMV encoded data */
+RK_AUDIO_ID_G729,        /**< Any variant of G.729 encoded data */
+RK_AUDIO_ID_OPUS,        /**< Any variant of OPUS encoded data */
+RK_AUDIO_ID_TMD,         /**< Any variant of TMD encoded data */
+RK_AUDIO_ID_MP3,         /**< Any variant of MP3 encoded data */
+RK_AUDIO_ID_SBC,         /**< Any variant of SBC encoded data */
+RK_AUDIO_ID_VORBIS,      /**< Any variant of VORBIS encoded data */
+RK_AUDIO_ID_WMA,         /**< Any variant of WMA encoded data */
+RK_AUDIO_ID_RA,          /**< Any variant of RA encoded data */
+RK_AUDIO_ID_MIDI,        /**< Any variant of MIDI encoded data */
+RK_AUDIO_ID_FLAC,        /**< Any variant of FLAC encoded data */
+
+
+
+3.图像设置
+URL结构：/image/{cam_id}/{scene_id}/{specific}
+cam_id: 摄像头ID， 当前固定为0 
+scene_id: 场景ID, 0=通用，1=白天，2=晚上
+specific：adjustment/exposure/white-blance/blc/enhancement
+
+URL	 说明
+/image/0	当前画面的所有配置 ( PUT 请求配置保存)
+/image/0/video-adjustment	视频流显示调整，镜像，旋转  ( 单独一个应用按钮， 点击生效并保存)
+/image/0//night-to-day	日夜参数   ( PUT 请求配置不保存)
+/image/0/{scene_id}/adjustment	图像基础调节: 亮度，对比度，饱和度，锐度，色调 ( PUT 请求配置不保存)
+/image/0/{scene_id}/exposure	图像曝光调节: 曝光时间等等  ( PUT 请求配置不保存)
+/image/0/{scene_id}/white-blance	图像白平衡调节:   ( PUT 请求配置不保存)
+/image/0/{scene_id}/blc	背光  ( PUT 请求配置不保存)
+/image/0/{scene_id}/enhancement	图像增强  ( PUT 请求配置不保存)
+/image/0/{scene_id}/af	对焦  ( PUT 请求配置不保存)
+
+
+
+注意事项:
+1.当用户的配置为自动转换时， 此时又处于web 画面编辑状态， 这种自动转换时刻的边界点先不考虑 
+
+
+3.0 视频画面所有参数
+功能：获取当前画面ISP 参数
+URL:/image/0
+请求方法：GET
+请求示例：
+{
+    "id": 0, // 摄像头通道ID（0 表示第一个摄像头）
+    "videoAdjustment": { // 图像方向与防频闪
+        "iImageRotation": 90, // 旋转角度：0/90/180/270，用于传感器安装方向
+        "sImageFlip": "close", // 镜像翻转：close=无；mirror=水平；flip=垂直；centrosymmetric=水平+垂直
+        "sPowerLineFrequencyMode": "NTSC(60HZ)" // 防闪频率：PAL(50HZ)=50Hz地区；NTSC(60HZ)=60Hz;
+    },
+    "nightToDay": { // 昼夜切换与补光
+        "iMode":0, // 转换模式, 0=自动转换, 1=定时转换, 2=保持不变
+        "iNightToDayFilterLevel": 5, // 切换阈值灵敏度,自动转换模式使用,0=高，1=中，2=低
+        "iNightToDayFilterTime": 5, // 切换滞后时间(s) 防抖,自动转换模式使用,1~60s
+        "iDawnTime":28800, // 晨曦时间(秒),定时转换模式使用,0~86400s
+        "iDuskTime":64800, // 黄昏时间(秒),需要大于iDawnTime时间，定时转换模式使用,0~86400s
+        "iProfileSelect": 0 // 配置文件选择, 保持不变模式使用, 0=通用, 1=白天, 2=夜晚
+        "iProfileCur": 0 // 当前使用的profile配置
+    },
+    "profile": [//0=通用, 1=白天, 2=夜晚
+        {
+            "imageAdjustment": { // 基础后处理调节
+                "iBrightness": 57, // 亮度 0-100 -> 内部 *2.55 到 0-255；过高泛灰
+                "iContrast": 50, // 对比度 0-100 -> *2.55；过高丢失中间层次
+                "iHue": 50, // 色调 0-100 -> *2.55；通常保持 50
+                "iSaturation": 50, // 饱和度 0-100 -> *2.55；高会鲜艳失真，低会发灰
+                "iSharpness": 50 // 锐度 0-100（直接传值）；高易出现振铃/噪点放大
+            },
+            "exposure": { // 曝光控制
+                "iExposureGain": 1, // 手动增益值 (整型，范围依 sensor 一般 1-128+)，自动模式下读取当前值
+                "sExposureMode": "auto", // 曝光模式：auto=自动；manual=手动；
+                "sExposureTime": "1/6", // 曝光时间 \"分子/分母\" 或小数秒；手动需<=帧周期 (1/FPS)
+                "sGainMode": "auto" // 增益模式：auto=自动；manual=手动，配合 iExposureGain
+            },
+
+            "BLC": { // 背光 / 高亮 / 暗区增强相关模块
+                "iBLCStrength": 28, // 背光补偿强度 0-100，越大逆光场景前景被提亮，但可能噪声提升
+                "iDarkBoostLevel": 50, // 暗部增强等级 1-100，提高暗区亮度，过高易噪点放大
+                "iHDRLevel": 1, // HDR宽动态强度等级（ISP3.0 tmo未直接用；常用 0-3 或 0-10）
+                "iHLCLevel": 1, // 高亮抑制(HLC)强度 1-100，压制强点光源；0 在驱动中会被修正为 1
+                "sBLCRegion": "open", // 背光补偿区域开关：open=开启自动区域；close=关闭；
+                "sHDR": "close", // HDR 宽动态开关：open=开启；close=关闭；可能扩展 auto
+                "sHLC": "close" // 高亮抑制开关：open=启用；close=关闭
+            },
+            "whiteBlance": { // 白平衡控制
+                "iWhiteBalanceCT": 2800, // color temperature value [2800, 7500]K
+                "sWhiteBlanceStyle": "manualWhiteBalance" // 模式：autoWhiteBalance=自动； manualWhiteBalance=手动可调色温； 还有 自然光， 路灯，室外配置可选
+            },
+            "imageEnhancement": { // 增强算法
+                "iSpatialDenoiseLevel": 50, // 空域降噪 0-100；若 noise_reduce_mode=close 或 3dnr 会被强制回 50
+                "iTemporalDenoiseLevel": 50, // 时域降噪 0-100；若 noise_reduce_mode=close 或 2dnr 会被强制回 50；过高拖影
+                "sNoiseReduceMode": "mixnr" // 降噪模式：close=关闭(仍保持默认 50),mixnr=混合
+            }
+        },
+        {
+            "imageAdjustment": { // 基础后处理调节
+                "iBrightness": 57, // 亮度 0-100 -> 内部 *2.55 到 0-255；过高泛灰
+                "iContrast": 50, // 对比度 0-100 -> *2.55；过高丢失中间层次
+                "iHue": 50, // 色调 0-100 -> *2.55；通常保持 50
+                "iSaturation": 50, // 饱和度 0-100 -> *2.55；高会鲜艳失真，低会发灰
+                "iSharpness": 50 // 锐度 0-100（直接传值）；高易出现振铃/噪点放大
+            },
+            "exposure": { // 曝光控制
+                "iExposureGain": 1, // 手动增益值 (整型，范围依 sensor 一般 1-128+)，自动模式下读取当前值
+                "sExposureMode": "auto", // 曝光模式：auto=自动；manual=手动；
+                "sExposureTime": "1/6", // 曝光时间 \"分子/分母\" 或小数秒；手动需<=帧周期 (1/FPS)
+                "sGainMode": "auto" // 增益模式：auto=自动；manual=手动，配合 iExposureGain
+            },
+
+            "BLC": { // 背光 / 高亮 / 暗区增强相关模块
+                "iBLCStrength": 28, // 背光补偿强度 0-100，越大逆光场景前景被提亮，但可能噪声提升
+                "iDarkBoostLevel": 50, // 暗部增强等级 1-100，提高暗区亮度，过高易噪点放大
+                "iHDRLevel": 1, // HDR宽动态强度等级（ISP3.0 tmo未直接用；常用 0-3 或 0-10）
+                "iHLCLevel": 1, // 高亮抑制(HLC)强度 1-100，压制强点光源；0 在驱动中会被修正为 1
+                "sBLCRegion": "open", // 背光补偿区域开关：open=开启自动区域；close=关闭；
+                "sHDR": "close", // HDR 宽动态开关：open=开启；close=关闭；可能扩展 auto
+                "sHLC": "close" // 高亮抑制开关：open=启用；close=关闭
+            },
+            "whiteBlance": { // 白平衡控制
+                "iWhiteBalanceCT": 2800, // color temperature value [2800, 7500]K
+                "sWhiteBlanceStyle": "manualWhiteBalance" // 模式：autoWhiteBalance=自动； manualWhiteBalance=手动可调色温； 还有 自然光， 路灯，室外配置可选
+            },
+            "imageEnhancement": { // 增强算法
+                "iSpatialDenoiseLevel": 50, // 空域降噪 0-100；若 noise_reduce_mode=close 或 3dnr 会被强制回 50
+                "iTemporalDenoiseLevel": 50, // 时域降噪 0-100；若 noise_reduce_mode=close 或 2dnr 会被强制回 50；过高拖影
+                "sNoiseReduceMode": "mixnr" // 降噪模式：close=关闭(仍保持默认 50),mixnr=混合
+            }
+        },
+        {
+            "imageAdjustment": { // 基础后处理调节
+                "iBrightness": 57, // 亮度 0-100 -> 内部 *2.55 到 0-255；过高泛灰
+                "iContrast": 50, // 对比度 0-100 -> *2.55；过高丢失中间层次
+                "iHue": 50, // 色调 0-100 -> *2.55；通常保持 50
+                "iSaturation": 50, // 饱和度 0-100 -> *2.55；高会鲜艳失真，低会发灰
+                "iSharpness": 50 // 锐度 0-100（直接传值）；高易出现振铃/噪点放大
+            },
+            "exposure": { // 曝光控制
+                "iExposureGain": 1, // 手动增益值 (整型，范围依 sensor 一般 1-128+)，自动模式下读取当前值
+                "sExposureMode": "auto", // 曝光模式：auto=自动；manual=手动；
+                "sExposureTime": "1/6", // 曝光时间 \"分子/分母\" 或小数秒；手动需<=帧周期 (1/FPS)
+                "sGainMode": "auto" // 增益模式：auto=自动；manual=手动，配合 iExposureGain
+            },
+
+            "BLC": { // 背光 / 高亮 / 暗区增强相关模块
+                "iBLCStrength": 28, // 背光补偿强度 0-100，越大逆光场景前景被提亮，但可能噪声提升
+                "iDarkBoostLevel": 50, // 暗部增强等级 1-100，提高暗区亮度，过高易噪点放大
+                "iHDRLevel": 1, // HDR宽动态强度等级（ISP3.0 tmo未直接用；常用 0-3 或 0-10）
+                "iHLCLevel": 1, // 高亮抑制(HLC)强度 1-100，压制强点光源；0 在驱动中会被修正为 1
+                "sBLCRegion": "open", // 背光补偿区域开关：open=开启自动区域；close=关闭；
+                "sHDR": "close", // HDR 宽动态开关：open=开启；close=关闭；可能扩展 auto
+                "sHLC": "close" // 高亮抑制开关：open=启用；close=关闭
+            },
+            "whiteBlance": { // 白平衡控制
+                "iWhiteBalanceCT": 2800, // color temperature value [2800, 7500]K
+                "sWhiteBlanceStyle": "manualWhiteBalance" // 模式：autoWhiteBalance=自动； manualWhiteBalance=手动可调色温； 还有 自然光， 路灯，室外配置可选
+            },
+            "imageEnhancement": { // 增强算法
+                "iSpatialDenoiseLevel": 50, // 空域降噪 0-100；若 noise_reduce_mode=close 或 3dnr 会被强制回 50
+                "iTemporalDenoiseLevel": 50, // 时域降噪 0-100；若 noise_reduce_mode=close 或 2dnr 会被强制回 50；过高拖影
+                "sNoiseReduceMode": "mixnr" // 降噪模式：close=关闭(仍保持默认 50),mixnr=混合
+            }
+        }
+    ]
+}
+
+ 
+
+
+功能：修改当前画面参数
+URL:/image/0
+请求方法：POST
+请求示例：
+{
+    "id": 0, // 摄像头通道ID（0 表示第一个摄像头）
+    "videoAdjustment": { // 图像方向与防频闪
+        "iImageRotation": 90, // 旋转角度：0/90/180/270，用于传感器安装方向
+        "sImageFlip": "close", // 镜像翻转：close=无；mirror=水平；flip=垂直；centrosymmetric=水平+垂直
+        "sPowerLineFrequencyMode": "NTSC(60HZ)" // 防闪频率：PAL(50HZ)=50Hz地区；NTSC(60HZ)=60Hz;
+    },
+    "nightToDay": { // 昼夜切换与补光
+        "iMode":0, // 转换模式, 0=自动转换, 1=定时转换, 2=保持不变
+        "iNightToDayFilterLevel": 5, // 切换阈值灵敏度,自动转换模式使用,0=高，1=中，2=低
+        "iNightToDayFilterTime": 5, // 切换滞后时间(s) 防抖,自动转换模式使用,1~60s
+        "iDawnTime":28800, // 晨曦时间(秒),定时转换模式使用,0~86400s
+        "iDuskTime":64800, // 黄昏时间(秒),需要大于iDawnTime时间，定时转换模式使用,0~86400s
+        "iProfileSelect": 0 // 配置文件选择, 保持不变模式使用, 0=通用, 1=白天, 2=夜晚
+    },
+    "profile": [//0=通用, 1=白天, 2=夜晚
+        {
+            "imageAdjustment": { // 基础后处理调节
+                "iBrightness": 57, // 亮度 0-100 -> 内部 *2.55 到 0-255；过高泛灰
+                "iContrast": 50, // 对比度 0-100 -> *2.55；过高丢失中间层次
+                "iHue": 50, // 色调 0-100 -> *2.55；通常保持 50
+                "iSaturation": 50, // 饱和度 0-100 -> *2.55；高会鲜艳失真，低会发灰
+                "iSharpness": 50 // 锐度 0-100（直接传值）；高易出现振铃/噪点放大
+            },
+            "exposure": { // 曝光控制
+                "iExposureGain": 1, // 手动增益值 (整型，范围依 sensor 一般 1-128+)，自动模式下读取当前值
+                "sExposureMode": "auto", // 曝光模式：auto=自动；manual=手动；
+                "sExposureTime": "1/6", // 曝光时间 \"分子/分母\" 或小数秒；手动需<=帧周期 (1/FPS)
+                "sGainMode": "auto" // 增益模式：auto=自动；manual=手动，配合 iExposureGain
+            },
+
+            "BLC": { // 背光 / 高亮 / 暗区增强相关模块
+                "iBLCStrength": 28, // 背光补偿强度 0-100，越大逆光场景前景被提亮，但可能噪声提升
+                "iDarkBoostLevel": 50, // 暗部增强等级 1-100，提高暗区亮度，过高易噪点放大
+                "iHDRLevel": 1, // HDR宽动态强度等级（ISP3.0 tmo未直接用；常用 0-3 或 0-10）
+                "iHLCLevel": 1, // 高亮抑制(HLC)强度 1-100，压制强点光源；0 在驱动中会被修正为 1
+                "sBLCRegion": "open", // 背光补偿区域开关：open=开启自动区域；close=关闭；
+                "sHDR": "close", // HDR 宽动态开关：open=开启；close=关闭；可能扩展 auto
+                "sHLC": "close" // 高亮抑制开关：open=启用；close=关闭
+            },
+            "whiteBlance": { // 白平衡控制
+                "iWhiteBalanceCT": 2800, // color temperature value [2800, 7500]K
+                "sWhiteBlanceStyle": "manualWhiteBalance" // 模式：autoWhiteBalance=自动； manualWhiteBalance=手动可调色温； 还有 自然光， 路灯，室外配置可选
+            },
+            "imageEnhancement": { // 增强算法
+                "iSpatialDenoiseLevel": 50, // 空域降噪 0-100；若 noise_reduce_mode=close 或 3dnr 会被强制回 50
+                "iTemporalDenoiseLevel": 50, // 时域降噪 0-100；若 noise_reduce_mode=close 或 2dnr 会被强制回 50；过高拖影
+                "sNoiseReduceMode": "mixnr" // 降噪模式：close=关闭(仍保持默认 50),mixnr=混合
+            }
+        },
+        {
+            "imageAdjustment": { // 基础后处理调节
+                "iBrightness": 57, // 亮度 0-100 -> 内部 *2.55 到 0-255；过高泛灰
+                "iContrast": 50, // 对比度 0-100 -> *2.55；过高丢失中间层次
+                "iHue": 50, // 色调 0-100 -> *2.55；通常保持 50
+                "iSaturation": 50, // 饱和度 0-100 -> *2.55；高会鲜艳失真，低会发灰
+                "iSharpness": 50 // 锐度 0-100（直接传值）；高易出现振铃/噪点放大
+            },
+            "exposure": { // 曝光控制
+                "iExposureGain": 1, // 手动增益值 (整型，范围依 sensor 一般 1-128+)，自动模式下读取当前值
+                "sExposureMode": "auto", // 曝光模式：auto=自动；manual=手动；
+                "sExposureTime": "1/6", // 曝光时间 \"分子/分母\" 或小数秒；手动需<=帧周期 (1/FPS)
+                "sGainMode": "auto" // 增益模式：auto=自动；manual=手动，配合 iExposureGain
+            },
+
+            "BLC": { // 背光 / 高亮 / 暗区增强相关模块
+                "iBLCStrength": 28, // 背光补偿强度 0-100，越大逆光场景前景被提亮，但可能噪声提升
+                "iDarkBoostLevel": 50, // 暗部增强等级 1-100，提高暗区亮度，过高易噪点放大
+                "iHDRLevel": 1, // HDR宽动态强度等级（ISP3.0 tmo未直接用；常用 0-3 或 0-10）
+                "iHLCLevel": 1, // 高亮抑制(HLC)强度 1-100，压制强点光源；0 在驱动中会被修正为 1
+                "sBLCRegion": "open", // 背光补偿区域开关：open=开启自动区域；close=关闭；
+                "sHDR": "close", // HDR 宽动态开关：open=开启；close=关闭；可能扩展 auto
+                "sHLC": "close" // 高亮抑制开关：open=启用；close=关闭
+            },
+            "whiteBlance": { // 白平衡控制
+                "iWhiteBalanceCT": 2800, // color temperature value [2800, 7500]K
+                "sWhiteBlanceStyle": "manualWhiteBalance" // 模式：autoWhiteBalance=自动； manualWhiteBalance=手动可调色温； 还有 自然光， 路灯，室外配置可选
+            },
+            "imageEnhancement": { // 增强算法
+                "iSpatialDenoiseLevel": 50, // 空域降噪 0-100；若 noise_reduce_mode=close 或 3dnr 会被强制回 50
+                "iTemporalDenoiseLevel": 50, // 时域降噪 0-100；若 noise_reduce_mode=close 或 2dnr 会被强制回 50；过高拖影
+                "sNoiseReduceMode": "mixnr" // 降噪模式：close=关闭(仍保持默认 50),mixnr=混合
+            }
+        },
+        {
+            "imageAdjustment": { // 基础后处理调节
+                "iBrightness": 57, // 亮度 0-100 -> 内部 *2.55 到 0-255；过高泛灰
+                "iContrast": 50, // 对比度 0-100 -> *2.55；过高丢失中间层次
+                "iHue": 50, // 色调 0-100 -> *2.55；通常保持 50
+                "iSaturation": 50, // 饱和度 0-100 -> *2.55；高会鲜艳失真，低会发灰
+                "iSharpness": 50 // 锐度 0-100（直接传值）；高易出现振铃/噪点放大
+            },
+            "exposure": { // 曝光控制
+                "iExposureGain": 1, // 手动增益值 (整型，范围依 sensor 一般 1-128+)，自动模式下读取当前值
+                "sExposureMode": "auto", // 曝光模式：auto=自动；manual=手动；
+                "sExposureTime": "1/6", // 曝光时间 \"分子/分母\" 或小数秒；手动需<=帧周期 (1/FPS)
+                "sGainMode": "auto" // 增益模式：auto=自动；manual=手动，配合 iExposureGain
+            },
+
+            "BLC": { // 背光 / 高亮 / 暗区增强相关模块
+                "iBLCStrength": 28, // 背光补偿强度 0-100，越大逆光场景前景被提亮，但可能噪声提升
+                "iDarkBoostLevel": 50, // 暗部增强等级 1-100，提高暗区亮度，过高易噪点放大
+                "iHDRLevel": 1, // HDR宽动态强度等级（ISP3.0 tmo未直接用；常用 0-3 或 0-10）
+                "iHLCLevel": 1, // 高亮抑制(HLC)强度 1-100，压制强点光源；0 在驱动中会被修正为 1
+                "sBLCRegion": "open", // 背光补偿区域开关：open=开启自动区域；close=关闭；
+                "sHDR": "close", // HDR 宽动态开关：open=开启；close=关闭；可能扩展 auto
+                "sHLC": "close" // 高亮抑制开关：open=启用；close=关闭
+            },
+            "whiteBlance": { // 白平衡控制
+                "iWhiteBalanceCT": 2800, // color temperature value [2800, 7500]K
+                "sWhiteBlanceStyle": "manualWhiteBalance" // 模式：autoWhiteBalance=自动； manualWhiteBalance=手动可调色温； 还有 自然光， 路灯，室外配置可选
+            },
+            "imageEnhancement": { // 增强算法
+                "iSpatialDenoiseLevel": 50, // 空域降噪 0-100；若 noise_reduce_mode=close 或 3dnr 会被强制回 50
+                "iTemporalDenoiseLevel": 50, // 时域降噪 0-100；若 noise_reduce_mode=close 或 2dnr 会被强制回 50；过高拖影
+                "sNoiseReduceMode": "mixnr" // 降噪模式：close=关闭(仍保持默认 50),mixnr=混合
+            }
+        }
+    ]
+}
+
+
+
+
+3.1 切换场景
+URL:/image/0/scene
+请求方法：PUT
+请求示例：
+{
+    "iProfileCur": 0 // 当前使用的profile配置
+}
+
+
+
+3.2 视频画面调节
+URL:/image/0/video-adjustment
+请求方法：PUT
+请求示例：
+{
+        "iImageRotation": 90,  //旋转, 0, 90, 180, 270
+        "sImageFlip": "close", //镜像/翻转方式, close, mirror（水平）, flip（上下）, centrosymmetric (水平+垂直都翻)
+        "sPowerLineFrequencyMode": "NTSC(60HZ)" ////“市电频率防闪模式”/“防频闪标准”, PAL(50HZ)\NTSC(60HZ)
+}
+
+
+3.3 日夜参数
+URL:/image/0/night-to-day
+请求方法：PUT
+请求示例：
+{
+        "iMode":0, // 转换模式, 0=自动转换, 1=定时转换, 2=保持不变
+        "iNightToDayFilterLevel": 5, // 切换阈值灵敏度,自动转换模式使用,0=高，1=中，2=低
+        "iNightToDayFilterTime": 5, // 切换滞后时间(s) 防抖,自动转换模式使用,1~60s
+        "iDawnTime":28800, // 晨曦时间(秒),定时转换模式使用,0~86400s
+        "iDuskTime":64800, // 黄昏时间(秒),需要大于iDawnTime时间，定时转换模式使用,0~86400s
+        "iProfileSelect": 0 // 配置文件选择, 保持不变模式使用, 0=通用, 1=白天, 2=夜晚
+}
+
+
+
+3.4 图像基础调节
+URL:/image/0/{scene_id}/adjustment
+请求方法：PUT
+请求示例：
+ {
+        "iBrightness": 57, // 亮度 0-100 -> 内部 *2.55 到 0-255；过高泛灰
+        "iContrast": 50, // 对比度 0-100 -> *2.55；过高丢失中间层次
+        "iHue": 50, // 色调 0-100 -> *2.55；通常保持 50
+        "iSaturation": 50, // 饱和度 0-100 -> *2.55；高会鲜艳失真，低会发灰
+        "iSharpness": 50 // 锐度 0-100（直接传值）；高易出现振铃/噪点放大
+}
+
+
+
+3.5 曝光参数
+URL:/image/0/{scene_id}/exposure
+请求方法：PUT
+请求示例：
+{
+        "iExposureGain": 1, // 手动增益值 (整型，范围依 sensor 一般 1-128+)，自动模式下读取当前值
+        "sExposureMode": "auto", // 曝光模式：auto=自动；manual=手动；
+        "sExposureTime": "1/6", // 曝光时间 \"分子/分母\" 或小数秒；手动需<=帧周期 (1/FPS)
+        "sGainMode": "auto" // 增益模式：auto=自动；manual=手动，配合 iExposureGain
+}
+
+
+3.6 背光参数
+URL:/image/0/{scene_id}/blc
+请求方法：PUT
+请求示例：
+{ 
+        "iBLCStrength": 28, // 背光补偿强度 0-100，越大逆光场景前景被提亮，但可能噪声提升
+        "iDarkBoostLevel": 50, // 暗部增强等级 1-100，提高暗区亮度，过高易噪点放大
+        "iHDRLevel": 1, // HDR宽动态强度等级（ISP3.0 tmo未直接用；常用 0-3 或 0-10）
+        "iHLCLevel": 1, // 高亮抑制(HLC)强度 1-100，压制强点光源；0 在驱动中会被修正为 1
+        "sBLCRegion": "open", // 背光补偿区域开关：open=开启自动区域；close=关闭；
+        "sHDR": "close", // HDR 宽动态开关：open=开启；close=关闭；可能扩展 auto
+        "sHLC": "close" // 高亮抑制开关：open=启用；close=关闭
+}
+
+
+3.7 白平衡参数
+URL:/image/0/{scene_id}/white-blance
+请求方法：PUT
+请求示例：
+{ 
+        "iWhiteBalanceCT": 2800, // color temperature value [2800, 7500]K
+        "sWhiteBlanceStyle": "manualWhiteBalance" // 模式：auto=自动； manual=手动可调色温；Natural=自然光；streetlight=路灯，outdor=室外
+}
+
+
+3.8 图像增强
+URL:/image/0/{scene_id}/enhancement
+请求方法：PUT
+请求示例：
+{
+        "iSpatialDenoiseLevel": 50, // 空域降噪 0-100；若 noise_reduce_mode=close 或 3dnr 会被强制回 50
+        "iTemporalDenoiseLevel": 50, // 时域降噪 0-100；若 noise_reduce_mode=close 或 2dnr 会被强制回 50；过高拖影
+        "sNoiseReduceMode": "mixnr" // 降噪模式：close=关闭(仍保持默认 50),mixnr=混合
+}
+
+
+
+
+三、录制设置
+
+https://drive.weixin.qq.com/s?k=AGEAZwfLABE3Vspwvu 
+（md 直接粘进来有问题，晚点等产品改好需求后，整理好）
+
+
+1.录制控制
+功能：获取录制配置
+URL：/record/control
+请求方法：GET
+响应示例：
+{
+"sRecordCondition": "time/trigger", 对应定时录制和触发录制
+"sRecordType": "video/image", 对应录制视频和图片
+"iRecordTime": 60    录制时长，当录制类型sRecordType为video时有效
+"sRecordFormat": "jpg/raw",   当录制类型为image时有效
+"sTriggerMethod": "io/ai/serial",  当录制条件为触发录制时的触发方式
+"iAntiShake": 5，    防抖时间
+"sIoPin": "gpio1/..."，  io引脚
+"sTriggerLevel": "height/low/up/down",  触发电平
+"sTriggerComand": "record",  触发指令
+"iPfTrigger": 7,  
+"sCurrentModel": "YOLOv5",    当前运行模型的模型名
+"sModelType": "detect"        当前模型的任务类型
+"sTriggerMask": "base64adf",  触发区域mask base64编码
+"lCondition":[{
+    "sName": "条件名",    
+    "iFrmae": 5,        进入mask区域帧数开始触发
+    "lLabel":["person","bus","moto"]     触发类别标签},
+    ...
+],
+
+}
+ 
+功能：录制配置
+URL：/record/control
+请求方法：POST
+请求示例：
+{
+"sRecordCondition": "time/trigger", 对应定时录制和触发录制
+"sRecordType": "video/image", 对应录制视频和图片
+"iRecordTime": 60    录制时长，当录制类型sRecordType为video时有效
+"sRecordFormat": "jpg/raw",   当录制类型为image时有效
+"sTriggerMethod": "io/ai/serial",  当录制条件为触发录制时的触发方式
+"iAntiShake": 5，    防抖时间
+"sIoPin": "gpio1/..."，  io引脚
+"sTriggerLevel": "height/low/up/down",  触发电平
+"sTriggerComand": "record",  触发指令
+"iPfTrigger": 7,  
+"sTriggerMask": "base64adf",  触发区域mask base64编码
+"lCondition":[{
+    "sName": "条件名",    
+    "iFrmae": 5,        进入mask区域帧数开始触发
+    "lLabel":["person","bus","moto"]     触发类别标签},
+    ...
+],
+}
+
+ 
+
+2.日程设置
+功能：获取当前录制的时间设置
+URL：/record/schedule
+请求方法：GET
+响应示例：
+{
+  "lMonday": [        周一时间列表
+    {
+      "startTime": "00:45",    起始时间段
+      "endTime": "07:00"        结束时间段
+    }，
+        {
+      "startTime": "08:45",    起始时间段
+      "endTime": "09:00"        结束时间段
+    }
+
+  ],
+  "lTuesday": [],        
+  "lWednesday": [],
+  "lThursday": [],
+  "lFriday": [],
+  "lSaturday": [],
+  "lSunday": []
+}
+ 
+功能：设置每周的录制时间
+URL：/record/schedule
+请求方法：POST
+请求示例：
+{
+  "lMonday": [        周一时间列表
+    {
+      "startTime": "00:45",    起始时间段
+      "endTime": "07:00"        结束时间段
+    }，
+        {
+      "startTime": "08:45",    起始时间段
+      "endTime": "09:00"        结束时间段
+    }
+  ],
+  "lTuesday": [],        
+  "lWednesday": [],
+  "lThursday": [],
+  "lFriday": [],
+  "lSaturday": [],
+  "lSunday": []
+}
+  
+
+四、AI推理
+
+模型文件列表如下:
+/userdata/model/rknn/model1.rknn
+/userdata/model/rknn/model1.json
+/userdata/model/rknn/model2.rknn
+/userdata/model/rknn/model2.json
+/userdata/model/rkllm/model1.rkllm
+/userdata/model/rkllm/model1.json
+
+
+1.模型管理
+1.1 获取模型列表
+功能：获取设备已有模型列表
+URL：/model/list
+请求方法：GET
+响应示例：
+[
+    {
+        "model":"yolov5.rknn"    // 模型文件名
+        "modelInfo":{
+            "name": "yolov5",    // 模型名, 模型信息文件为<name>.json
+            "framework": "rknn", //模型类别 rknn/rkllm , 模型文件为<name>.<framework>
+            "version": "1.0.0",  //版本号
+            "category": "Object Detection", //模型类型
+            "algorithm": "YOLOV5",  // 模型算法
+            "description": "xxx",   // 模型描述
+            "classes": [            // 类别
+                "person",
+                "xxx"
+            ],
+            "metrics": {     //评估指标, 不同模型类型，里面的字段不一样
+                "iou": 60,
+                "confidence": 60,
+                "topk":100
+            },
+            "author": "Seeed Studio",  //作者
+            "size": 1110, // 模型大小
+            "md5sum": "b3312af49a5d59a2533c973695a2267a" // 模型文件md5校验
+        }
+    },
+    {
+        "model":"yolov8.rknn"
+        "modelInfo":{}  // 没有找到模型信息为空
+    }
+]
+ 
+
+1.2 上传模型
+分段上传，支持断点续传
+
+功能：开始上传
+URL：/model/upload
+请求方法：POST
+Content-Type: text/plain
+content-length:0
+参数: upload-type=resumable
+响应：
+头部信息有: File-Id:123  //创建文件的唯一ID
+
+功能：上传模型
+URL：/model/upload
+请求方法：POST
+Content-Type: text/plain
+content-length=524288
+content-range：bytes 524288-1048575
+参数: id=123
+内容: 模型二进制内容
+
+
+功能：结束上传
+URL：/model/upload
+请求方法：POST
+Content-Type: text/plain
+参数: 
+start=123
+File-name=yolov5.rknn
+md5sum=b3312af49a5d59a2533c973695a2267a
+
+
+
+
+1.2 删除模型
+功能：删除模型
+URL：/model/delete
+请求方法：DELETE
+参数: File-name=yolov5.rknn // 模型名
+
+
+
+1.3 获取模型信息
+功能：获取模型信息
+URL：/model/info
+请求方法：GET
+参数: File-name=yolov5.rknn // 模型名
+响应示例：
+{
+    "name": "yolov5", // 模型名, 模型信息文件为<name>.json
+    "framework": "rknn", //模型rknn/rkllm , 模型文件为<name>.<framework>
+    "version": "1.0.0", //版本号
+    "category": "Object Detection", //模型类型
+    "algorithm": "YOLOV5", // 模型算法
+    "description": "xxx", // 描述
+    "classes": [  // 类别
+        "person",
+        "xxx"
+    ],
+    "metrics": { //评估指标
+        "iou": 60,
+        "confidence": 60,
+        "topk":100
+    },
+    "author": "Seeed Studio",  //作者
+    "size": 1110, // 模型大小
+    "md5sum": "b3312af49a5d59a2533c973695a2267a" // 模型文件md5校验
+}
+
+
+
+1.4 模型信息配置
+功能：设置或添加模型信息
+ URL:/model/info
+请求方法：POST
+参数: File-name=yolov5.rknn // 模型名
+请求示例：
+{
+    "name": "yolov5", // 模型名, 模型信息文件为<name>.json
+    "framework": "rknn", //模型rknn/rkllm , 模型文件为<name>.<framework>
+    "version": "1.0.0", //版本号
+    "category": "Object Detection", //模型类型
+    "algorithm": "YOLOV5", // 模型算法
+    "description": "xxx", // 描述
+    "classes": [  // 类别
+        "person",
+        "xxx"
+    ],
+    "metrics": { //评估指标
+        "iou": 60,
+        "confidence": 60,
+        "topk":100
+    },
+    "author": "Seeed Studio",  //作者
+    "size": 1110, // 模型大小
+    "md5sum": "b3312af49a5d59a2533c973695a2267a" // 模型文件md5校验
+}
+
+ 
+
+
+注意: 一定是先上传模型文件， 在配置模型信息
+
+1.4 模型算法支持
+功能：获取当前支持的模型算法
+ URL:/model/algorithm
+请求方法：GET
+{
+    "lDetection":[
+        yolov5,
+        yolov8
+    ]
+    "lClassification":[
+        yolov5,
+        yolov8
+    ]
+    "lSegmentation":[]
+    "lTracking":[]
+    "lKeypoint":[]
+}
+
+
+
+
+2.推理
+2.1 获取当前推理状态
+功能: 获取推理状态
+URL:/model/inference
+请求方式：GET
+参数: id=0
+响应示例：
+{
+    "iEnable": 1, //使用推理, 0 为关闭推理, 1 使能推理
+    "sStatus": "running"  // 推理的状态 running/stop/error
+    "sModel": "yolov5.rknn"; //当前运行的模型
+    "iFPS": 30; //推理频率
+}
+
+ 
+2.1 推理配置
+功能: 获取推理状态
+URL:/model/inference
+请求方式：POST
+参数: id=0
+响应示例：
+{
+    "iEnable": 1, //使用推理, 0 为关闭推理, 1 使能推理
+    "sModel": "yolov5.rknn"; //当前运行的模型
+    "iFPS": 30; //推理频率
+}
+
+ 
+
+注意: 如果这个模型没有对应的模型信息，则不能使能
+
+3.推理输出
+
+3.1 推理结果输出
+功能：获取触发记录
+URL：/ws/inference/results
+请求方式：websocket
+响应示例：
+"2024-01-15 14:30:25: 检测到 person 置信度 0.85 位置 (120,80,250,300)" 
+
+ 
+3.1 推理结果输出配置
+功能：获取推理输出配置
+URL：/notify/cfg
+请求方式：GET
+响应示例：
+{
+    "iMode": 1,  //输出方式, 0: 关闭, 1: mqtt, 2: http, 3: uart 
+    "dTemplate": { //输出模板
+        "sDetection":"{timestamp}: 检测到 {class} 置信度 {confidence} 位置 ({x1},{y1},{x2},{y2})",
+        "sClassification":"",
+        "sSegmentation":"",
+        "sTracking":"",
+        "sKeypoint":"",
+        "sOBB":""
+    }, 
+    "dMqtt":{ //MQTT 配置
+        "sURL": "mqtt.example.com",   //broker 地址
+        "iPort": 1883,         //端口
+        "sTopic": "results/data",    //topic
+        "sUsername": "name",         // 用户名
+        "sPassword": "root",      //密码 
+        "sClientId": "test"   // 客户端ID 
+    },
+    "dUart": { //串口配置
+        "sPort": "/dev/ttyS0", // 串口号
+        "iBaudRate":115200 //波特率 
+    },
+    //http
+    "dHttp":{
+        "sUrl": "http://192.168.1.111/results/data",  //htpp api 接口
+        "sToken": "admin xxx"           //token 鉴权
+    }
+}
+ 
+
+功能：推理输出配置
+URL：/notify/cfg
+请求方式：POST
+响应示例：
+{
+    "iModel": 1,  //输出方式, 0: 关闭, 1: mqtt, 2: http, 3: uart 
+    "dTemplate": { //输出模板
+        "sDetection":"{timestamp}: 检测到 {class} 置信度 {confidence} 位置 ({x1},{y1},{x2},{y2})",
+        "sClassification":"",
+        "sSegmentation":"",
+        "sTracking":"",
+        "sKeypoint":"",
+        "sOBB":""
+    }, 
+    "dMqtt":{ //MQTT 配置
+        "sURL": "mqtt.example.com",   //broker 地址
+        "iPort": 1883,         //端口
+        "sTopic": "results/data",    //topic
+        "sUsername": "name",         // 用户名
+        "sPassword": "adfasf"      //密码 
+        "sClientId": "test"   // 客户端ID 
+    } 
+    "dUart": { //串口配置
+        "sPort": "/dev/ttyS0", // 串口号
+        "iBaudRate":115200 //波特率 
+    }
+    //http
+    "dHttp":{
+        "sUrl": "http://192.168.1.111/results/data",  //htpp api 接口
+        "sToken": "admin xxx"           //token 鉴权
+    }
+}
+
+ 
+
+五、终端和日志
+1.终端
+功能：终端交互
+URL:/ws/system/terminal
+请求方式：websocket
+备注：后端使用ttyd，前端使用Xterm.js
+
+2.日志
+功能：系统日志
+URL：/ws/system/logs
+请求方式：websocket
+响应示例：
+//初次建立连接发送的格式
+[
+{
+"sTimestamp":"13212146584",
+"sLevel":"INFO",
+"sData":"系统启动"
+}
+...
+]
+//后续增量发送
+{
+"sTimestamp":"13212146584",
+"sLevel":"INFO",
+"sData":"系统启动"
+}
+
+
+
+ 
+
+
+
+
