@@ -28,6 +28,7 @@ router = APIRouter(prefix="/cgi-bin/entry.cgi", tags=["inference"])
 def get_model_list(_: str = Depends(require_auth)) -> List[ModelListItem]:
     """获取设备已有模型列表"""
     # 模拟返回模型列表
+    print(111)
     return [
         ModelListItem(
             model="yolov5.rknn",
@@ -35,7 +36,7 @@ def get_model_list(_: str = Depends(require_auth)) -> List[ModelListItem]:
                 name="yolov5",
                 framework="rknn",
                 version="1.0.0",
-                category="Object Detection",
+                category="Detection",
                 algorithm="YOLOV5",
                 description="YOLOv5 目标检测模型",
                 classes=["person", "car", "bus", "truck"],
@@ -201,7 +202,6 @@ def get_notify_config(_: str = Depends(require_auth)) -> NotifyConfig:
                 "sTopic": "results/data",
                 "sUsername": "name",
                 "sPassword": "root",
-                "sClientId": "test",
             },
             "dUart": {
                 "sPort": "/dev/ttyS0",

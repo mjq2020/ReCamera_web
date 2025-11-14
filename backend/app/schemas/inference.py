@@ -78,7 +78,7 @@ class MqttConfig(BaseModel):
     sTopic: str = Field(..., description="topic")
     sUsername: str = Field(..., description="用户名")
     sPassword: str = Field(..., description="密码")
-    sClientId: str = Field(..., description="客户端ID")
+    # sClientId: str = Field(..., description="客户端ID")
 
 
 class UartConfig(BaseModel):
