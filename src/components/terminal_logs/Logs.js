@@ -70,20 +70,36 @@ export default function SystemLogViewer() {
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    const newLog = {
-                        id: Date.now() + Math.random(),
-                        data: data.sData || '',
-                        timestamp: data.sTimestamp || new Date().toISOString(),
-                    };
+                    
+                    // 检查是否为数组（初始历史日志）
+                    if (Array.isArray(data)) {
+                        // 初次连接，接收历史日志列表
+                        const historicalLogs = data.map((log, index) => ({
+                            id: Date.now() + index,
+                            data: log.sData || '',
+                            timestamp: log.sTimestamp || new Date().toISOString(),
+                            level: log.sLevel || 'INFO',
+                        }));
+                        
+                        setLogs(historicalLogs);
+                    } else {
+                        // 增量更新，接收单条日志
+                        const newLog = {
+                            id: Date.now() + Math.random(),
+                            data: data.sData || '',
+                            timestamp: data.sTimestamp || new Date().toISOString(),
+                            level: data.sLevel || 'INFO',
+                        };
 
-                    setLogs(prevLogs => {
-                        // 限制日志数量，超过最大值时删除最旧的日志
-                        const updatedLogs = [...prevLogs, newLog];
-                        if (updatedLogs.length > MAX_LOG_ENTRIES) {
-                            return updatedLogs.slice(updatedLogs.length - MAX_LOG_ENTRIES);
-                        }
-                        return updatedLogs;
-                    });
+                        setLogs(prevLogs => {
+                            // 限制日志数量，超过最大值时删除最旧的日志
+                            const updatedLogs = [...prevLogs, newLog];
+                            if (updatedLogs.length > MAX_LOG_ENTRIES) {
+                                return updatedLogs.slice(updatedLogs.length - MAX_LOG_ENTRIES);
+                            }
+                            return updatedLogs;
+                        });
+                    }
                 } catch (error) {
                     console.error('解析日志数据失败:', error);
                 }

@@ -7,7 +7,7 @@ const AIInference = () => {
 
   return (
     <div className="page-container">
-      <InferencePage></InferencePage>
+      <InferencePage/>
     </div>
   );
 };

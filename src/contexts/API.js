@@ -1,17 +1,17 @@
 import axios from 'axios'
-import {urls} from './urls'
+import { urls } from './urls'
 
 const axiosInstance = axios.create(
     {
-        baseURL: "http://192.168.1.66:8000/cgi-bin/entry.cgi",
+        baseURL: "http://192.168.66.48/cgi-bin/entry.cgi",
         timeout: 10000,
-        withCredentials:true,
-        responseType:'json',
+        withCredentials: true,
+        responseType: 'json',
         headers: {
             "Content-Type": 'application/json',
-        // 'Cookie': 'token=6WzrB38mSelunPLRfK582OGLqZ6azeJQmFdK25T_Alo'
+            // 'Cookie': 'token=6WzrB38mSelunPLRfK582OGLqZ6azeJQmFdK25T_Alo'
         },
-        params:{}
+        params: {}
     }
 
 )
@@ -36,7 +36,7 @@ class DeviceInfoAPI {
     }
 
     static getWlanInfo() {
-        return  axiosInstance.get(urls.networkWlan)
+        return axiosInstance.get(urls.networkWlan)
     }
 
     static putWlanInfo(data) {
@@ -55,7 +55,7 @@ class DeviceInfoAPI {
     }
 
     static postScanWifi(scan) {
-        return axiosInstance.post(urls.networkWiFi,{}, {
+        return axiosInstance.post(urls.networkWiFi, {}, {
             params: {
                 scan: scan
             }
@@ -91,7 +91,7 @@ class DeviceInfoAPI {
     }
 
     static postWebSetting(data) {
-        return axiosInstance.post(urls.webSetting,data)
+        return axiosInstance.post(urls.webSetting, data)
     }
 
     static getFtpSetting() {
@@ -103,7 +103,7 @@ class DeviceInfoAPI {
     }
 
     static getConfig() {
-        axiosInstance.get(urls.configExport,{responseType: 'json'})
+        axiosInstance.get(urls.configExport, { responseType: 'json' })
     }
 
     static postConfig(data) {
@@ -112,7 +112,7 @@ class DeviceInfoAPI {
     }
 
     static postFirmware(data) {
-        axiosInstance.post(urls.systemFirmwareUpgrade,data)
+        axiosInstance.post(urls.systemFirmwareUpgrade, data)
     }
 
     static postFirmwareNetwork(data) {
@@ -146,8 +146,105 @@ class RecordAPI {
 }
 
 class InferenceAPI {
+    // 获取模型列表
+    static getModelList() {
+        return axiosInstance.get(urls.modelList)
+    }
 
+    // 开始上传模型
+    static startModelUpload() {
+        return axiosInstance.post(urls.modelUpload, null, {
+            params: {
+                'upload-type': 'resumable'
+            },
+            headers: {
+                'Content-Type': 'text/plain'
+            }
+        })
+    }
 
+    // 上传模型分块
+    static uploadModelChunk(fileId, chunk, start, end, totalSize) {
+        return axiosInstance.post(urls.modelUpload, chunk, {
+            params: {
+                id: fileId
+            },
+            headers: {
+                'Content-Type': 'text/plain',
+                'Content-Range': `bytes ${start}-${end}/${totalSize}`
+            }
+        })
+    }
+
+    // 完成模型上传
+    static finishModelUpload(fileId, fileName, md5sum) {
+        return axiosInstance.post(urls.modelUpload, null, {
+            params: {
+                start: fileId,
+                'File-name': fileName,
+                md5sum: md5sum
+            },
+            headers: {
+                'Content-Type': 'text/plain'
+            }
+        })
+    }
+//
+    // 删除模型
+    static deleteModel(fileName) {
+        return axiosInstance.delete(urls.modelDelete, {
+            params: {
+                'File-name': fileName
+            }
+        })
+    }
+
+    // 获取模型信息
+    static getModelInfo(fileName) {
+        return axiosInstance.get(urls.modelInfo, {
+            params: {
+                'File-name': fileName
+            }
+        })
+    }
+
+    // 配置模型信息
+    static setModelInfo(fileName, data) {
+        return axiosInstance.post(urls.modelInfo, data, {
+            params: {
+                'File-name': fileName
+            }
+        })
+    }
+
+    // 获取支持的算法
+    static getAlgorithmSupport() {
+        return axiosInstance.get(urls.modelAlgo)
+    }
+
+    // 获取推理状态
+    static getInferenceStatus(id = 0) {
+        return axiosInstance.get(urls.modelInference, {
+            params: { id }
+        })
+    }
+
+    // 配置推理
+    static setInferenceConfig(data, id = 0) {
+        return axiosInstance.post(urls.modelInference, data, {
+            params: { id }
+        })
+    }
+
+    // 获取推理输出配置
+    static getNotifyConfig() {
+        return axiosInstance.get(urls.nofifyConfig)
+    }
+
+    // 设置推理输出配置
+    static setNotifyConfig(data) {
+        return axiosInstance.post(urls.nofifyConfig, data)
+    }
 }
 
 
