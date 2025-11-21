@@ -109,38 +109,6 @@ const Terminal = () => {
         <p className="page-description">通过命令行管理和监控设备</p>
       </div>
       <XtermTtydClient/>
-      {/* <div className="card">
-        <div className="card-body">
-          <div className="terminal">
-            <div className="terminal-output">
-              {history.map((item, index) => (
-                <div key={index} className={`terminal-line ${item.type}`}>
-                  {item.type === 'command' ? (
-                    <span className="command-text">{item.text}</span>
-                  ) : item.type === 'prompt' ? (
-                    <span className="prompt-text">{item.text}</span>
-                  ) : (
-                    <pre className="output-text">{item.text}</pre>
-                  )}
-                </div>
-              ))}
-              <div ref={terminalEndRef} />
-            </div>
-
-            <form onSubmit={handleCommand} className="terminal-input-form">
-              <span className="prompt-symbol">$</span>
-              <input
-                type="text"
-                value={command}
-                onChange={(e) => setCommand(e.target.value)}
-                className="terminal-input"
-                placeholder="输入命令..."
-                autoFocus
-              />
-            </form>
-          </div>
-        </div>
-      </div> */}
 
       <div className="card">
         <div className="card-header">

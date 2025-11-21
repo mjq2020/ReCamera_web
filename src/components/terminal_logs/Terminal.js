@@ -11,7 +11,7 @@ const Command = {
   OUTPUT: '0',           // 输出数据
   SET_WINDOW_TITLE: '1', // 设置窗口标题
   SET_PREFERENCES: '2',  // 设置偏好设置
-  
+
   // 客户端命令
   INPUT: '0',            // 输入数据
   RESIZE_TERMINAL: '1',  // 调整终端大小
@@ -29,7 +29,8 @@ const XtermTtydClient = () => {
   const onResizeHandlerRef = useRef(null);
   const textEncoderRef = useRef(new TextEncoder());
   const textDecoderRef = useRef(new TextDecoder());
-  
+  const keyDisposeRef = useRef(null);
+
   // 流量控制
   const flowControlRef = useRef({
     limit: 100000,
@@ -38,28 +39,29 @@ const XtermTtydClient = () => {
     written: 0,
     pending: 0
   });
-  
+
   const [connectionStatus, setConnectionStatus] = useState('disconnected');
   const [isPasswordRequired, setIsPasswordRequired] = useState(false);
   const [password, setPassword] = useState('');
   const [autoReconnect, setAutoReconnect] = useState(true);
   const [tokenUrl] = useState('');
   const [authToken, setAuthToken] = useState('');
+  const [enterReconnect, setEnterReconnect] = useState(true);
 
   // ttyd WebSocket 地址
   const TTYD_URL = 'ws://192.168.1.66:5556/ws';
-  
+
   // 写入数据到终端（带流量控制）
   const writeData = useCallback((data) => {
     const term = xtermRef.current;
     const socket = socketRef.current;
     const flowControl = flowControlRef.current;
     const textEncoder = textEncoderRef.current;
-    
+
     if (!term) return;
 
     flowControl.written += data.length;
-    
+
     if (flowControl.written > flowControl.limit) {
       term.write(data, () => {
         flowControl.pending = Math.max(flowControl.pending - 1, 0);
@@ -69,7 +71,7 @@ const XtermTtydClient = () => {
       });
       flowControl.pending++;
       flowControl.written = 0;
-      
+
       if (flowControl.pending > flowControl.highWater && socket?.readyState === WebSocket.OPEN) {
         socket.send(textEncoder.encode(Command.PAUSE));
       }
@@ -82,7 +84,7 @@ const XtermTtydClient = () => {
   const sendData = useCallback((data) => {
     const socket = socketRef.current;
     const textEncoder = textEncoderRef.current;
-    
+
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
     if (typeof data === 'string') {
@@ -114,7 +116,7 @@ const XtermTtydClient = () => {
 
     setConnectionStatus('connecting');
     const term = xtermRef.current;
-    
+
     try {
       console.log('[ttyd] Connecting to:', TTYD_URL);
       const socket = new WebSocket(TTYD_URL, ['tty']);
@@ -125,7 +127,7 @@ const XtermTtydClient = () => {
         console.log('[ttyd] WebSocket connection opened');
         setConnectionStatus('connected');
         setIsPasswordRequired(false);
-        
+
         // 发送认证和终端尺寸信息
         const textEncoder = textEncoderRef.current;
         const { cols, rows } = term;
@@ -136,7 +138,7 @@ const XtermTtydClient = () => {
         });
         socket.send(textEncoder.encode(authMsg));
         console.log('[ttyd] Sent auth and size:', authMsg);
-        
+
         term.writeln('\r\n\x1b[32m[已连接到远程终端]\x1b[0m');
         term.focus();
 
@@ -152,7 +154,7 @@ const XtermTtydClient = () => {
 
         // 监听终端输入
         onDataHandlerRef.current = term.onData(sendData);
-        
+
         // 监听终端 binary 输入
         const onBinaryHandler = term.onBinary((data) => {
           sendData(Uint8Array.from(data, v => v.charCodeAt(0)));
@@ -171,31 +173,31 @@ const XtermTtydClient = () => {
 
       socket.onmessage = (event) => {
         if (!xtermRef.current) return;
-        
+
         const textDecoder = textDecoderRef.current;
         const rawData = event.data;
-        
+
         if (rawData instanceof ArrayBuffer) {
           // 二进制数据处理
           const uint8Data = new Uint8Array(rawData);
           if (uint8Data.length === 0) return;
-          
+
           const cmd = String.fromCharCode(uint8Data[0]);
           const data = rawData.slice(1);
-          
+
           switch (cmd) {
             case Command.OUTPUT:
               // 输出数据
               writeData(new Uint8Array(data));
               break;
-              
+
             case Command.SET_WINDOW_TITLE:
               // 设置窗口标题
               const title = textDecoder.decode(data);
               document.title = title;
               console.log('[ttyd] Window title set:', title);
               break;
-              
+
             case Command.SET_PREFERENCES:
               // 设置偏好设置
               try {
@@ -206,7 +208,7 @@ const XtermTtydClient = () => {
                 console.error('[ttyd] Failed to parse preferences:', e);
               }
               break;
-              
+
             default:
               console.warn('[ttyd] Unknown command:', cmd);
               // 默认作为输出处理
@@ -227,11 +229,11 @@ const XtermTtydClient = () => {
       socket.onclose = (event) => {
         console.log(`[ttyd] WebSocket connection closed with code: ${event.code}`);
         setConnectionStatus('disconnected');
-        
+
         if (xtermRef.current) {
           xtermRef.current.writeln('\r\n\x1b[33m[连接已断开]\x1b[0m');
         }
-        
+
         // 清理处理器
         if (onDataHandlerRef.current) {
           onDataHandlerRef.current.dispose();
@@ -241,11 +243,11 @@ const XtermTtydClient = () => {
           onResizeHandlerRef.current.dispose();
           onResizeHandlerRef.current = null;
         }
-        
+
         // 重置流量控制
         flowControlRef.current.written = 0;
         flowControlRef.current.pending = 0;
-        
+
         // 检查是否需要密码认证
         if (event.code === 1008 || (event.reason && event.reason.includes('auth'))) {
           setIsPasswordRequired(true);
@@ -263,13 +265,17 @@ const XtermTtydClient = () => {
         } else {
           // 提示按回车重连
           if (xtermRef.current) {
-            const keyDispose = xtermRef.current.onKey(e => {
-              if (e.domEvent.key === 'Enter') {
-                keyDispose.dispose();
-                connectToTtyd(token);
-              }
-            });
+            if (!keyDisposeRef.current) {
+              keyDisposeRef.current = xtermRef.current.onKey(e => {
+                if (e.domEvent.key === 'Enter') {
+                  keyDisposeRef.current.dispose();
+                  keyDisposeRef.current = null;
+                  connectToTtyd(token);
+                }
+              });
+            }
             xtermRef.current.writeln('\x1b[36m[按 Enter 键重新连接]\x1b[0m');
+
           }
         }
       };
@@ -291,7 +297,7 @@ const XtermTtydClient = () => {
     }
 
     console.log('[ttyd] Initializing terminal...');
-    
+
     // 创建 xterm.js 实例
     const term = new Terminal({
       cursorBlink: true,
@@ -330,14 +336,14 @@ const XtermTtydClient = () => {
     // 添加插件
     const fitAddon = new FitAddon();
     const webLinksAddon = new WebLinksAddon();
-    
+
     try {
       term.loadAddon(fitAddon);
       term.loadAddon(webLinksAddon);
-      
+
       // 打开终端
       term.open(terminalRef.current);
-      
+
       xtermRef.current = term;
       fitAddonRef.current = fitAddon;
 
@@ -371,7 +377,7 @@ const XtermTtydClient = () => {
       const onSelectionChangeHandler = term.onSelectionChange(() => {
         if (term.getSelection() === '') return;
         try {
-          document.execCommand('copy');
+          document.copyText(term.getSelection());
         } catch (e) {
           // 忽略错误
         }
@@ -388,30 +394,30 @@ const XtermTtydClient = () => {
         console.log('[ttyd] Cleaning up terminal...');
         clearTimeout(connectTimer);
         window.removeEventListener('resize', handleResize);
-        
+
         if (reconnectTimerRef.current) {
           clearTimeout(reconnectTimerRef.current);
         }
-        
+
         if (onDataHandlerRef.current) {
           onDataHandlerRef.current.dispose();
           onDataHandlerRef.current = null;
         }
-        
+
         if (onResizeHandlerRef.current) {
           onResizeHandlerRef.current.dispose();
           onResizeHandlerRef.current = null;
         }
-        
+
         if (onSelectionChangeHandler) {
           onSelectionChangeHandler.dispose();
         }
-        
+
         if (socketRef.current) {
           socketRef.current.close(1000);
           socketRef.current = null;
         }
-        
+
         if (xtermRef.current) {
           xtermRef.current.dispose();
           xtermRef.current = null;
@@ -435,12 +441,13 @@ const XtermTtydClient = () => {
     if (xtermRef.current) {
       xtermRef.current.clear();
     }
-    setAutoReconnect(true);
+    // setAutoReconnect(true);
     connectToTtyd();
   };
 
   const handleDisconnect = () => {
-    setAutoReconnect(false);
+    // setAutoReconnect(false);
+    setEnterReconnect(false);
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
@@ -448,6 +455,7 @@ const XtermTtydClient = () => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.close(1000);
     }
+
   };
 
   const getStatusColor = () => {
@@ -484,17 +492,17 @@ const XtermTtydClient = () => {
     <div className="xterm-container">
       <div className="xterm-toolbar">
         <div className="xterm-status">
-          <span 
-            className="status-indicator" 
+          <span
+            className="status-indicator"
             style={{ backgroundColor: getStatusColor() }}
           ></span>
           <span className="status-text">{getStatusText()}</span>
         </div>
-        
+
         <div className="xterm-controls">
           {connectionStatus !== 'connected' && (
-            <button 
-              className="btn btn-primary btn-sm" 
+            <button
+              className="btn btn-primary btn-sm"
               onClick={handleReconnect}
               disabled={connectionStatus === 'connecting'}
             >
@@ -502,8 +510,8 @@ const XtermTtydClient = () => {
             </button>
           )}
           {connectionStatus === 'connected' && (
-            <button 
-              className="btn btn-danger btn-sm" 
+            <button
+              className="btn btn-danger btn-sm"
               onClick={handleDisconnect}
             >
               断开连接
@@ -531,19 +539,19 @@ const XtermTtydClient = () => {
         </div>
       )}
 
-      <div 
-        ref={terminalRef} 
+      <div
+        ref={terminalRef}
         className="xterm-terminal"
-        style={{ 
+        style={{
           height: '500px',
           padding: '10px'
         }}
       />
-      
+
       {connectionStatus === 'connected' && (
-        <div style={{ 
-          padding: '10px', 
-          fontSize: '12px', 
+        <div style={{
+          padding: '10px',
+          fontSize: '12px',
           color: '#98c379',
           background: '#2d2d2d',
           borderTop: '1px solid #3d3d3d'
@@ -552,9 +560,9 @@ const XtermTtydClient = () => {
         </div>
       )}
       {connectionStatus === 'disconnected' && !isPasswordRequired && (
-        <div style={{ 
-          padding: '10px', 
-          fontSize: '12px', 
+        <div style={{
+          padding: '10px',
+          fontSize: '12px',
           color: '#ff9800',
           background: '#2d2d2d',
           borderTop: '1px solid #3d3d3d'

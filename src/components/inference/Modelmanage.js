@@ -220,21 +220,6 @@ export default function ModelManage({ onModelDeleted }) {
                                                         <Trash2 size={14} />
                                                         删除
                                                     </button>
-                                                    <button
-                                                        onClick={() => handleInferModel(item.model)}
-                                                        className={(currentInferModel?.iEnable == 1 && currentInferModel?.sModel == item.model) ?
-                                                            "btn-small-gray btn" : "btn-small"}
-                                                        title="应用模型"
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '4px',
-                                                        }}
-                                                    >
-                                                        {(currentInferModel?.iEnable == 1 && currentInferModel?.sModel == item.model) ?
-                                                            <SquareCheckBig size={14} /> : <Square size={14} />}
-                                                        应用
-                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
