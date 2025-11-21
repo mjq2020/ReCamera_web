@@ -1,5 +1,6 @@
 export const urls = {
     // base info
+    systemLogin: '/system/system/login',
     systemInfo: '/system/device-info',
     systemTime: "/system/time",
     systemResourceInfo: "/system/resource-info",
@@ -35,6 +36,26 @@ export const urls = {
     wsInferenceResults:"/ws/inference/results",
     nofifyConfig:"/notify/cfg",
 
+    // Live Settings - Video
+    videoEncode: (streamId) => `/video/${streamId}/encode`,
+    videoOsdChar: (streamId) => `/video/${streamId}/osd-char`,
+    videoOsdInference: (streamId) => `/video/${streamId}/osd-inference`,
+    videoOsdMask: (streamId) => `/video/${streamId}/osd-mask`,
+    videoStream: (streamId) => `/video/${streamId}/stream`,
 
+    // Live Settings - Audio
+    audio: (id) => `/audio/${id}`,
+
+    // Image Settings
+    imageAll: "/image/0",
+    imageVideoAdjustment: "/image/0/video-adjustment",
+    imageNightToDay: "/image/0/night-to-day",
+    imageScene: "/image/0/scene",
+    imageAdjustment: (sceneId) => `/image/0/${sceneId}/adjustment`,
+    imageExposure: (sceneId) => `/image/0/${sceneId}/exposure`,
+    imageWhiteBlance: (sceneId) => `/image/0/${sceneId}/white-blance`,
+    imageBLC: (sceneId) => `/image/0/${sceneId}/blc`,
+    imageEnhancement: (sceneId) => `/image/0/${sceneId}/enhancement`,
+    imageAF: (sceneId) => `/image/0/${sceneId}/af`,
 
 };
