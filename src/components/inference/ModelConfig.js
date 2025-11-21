@@ -3,7 +3,7 @@ import { InferenceAPI } from '../../contexts/API';
 import { X, Save, Info } from 'lucide-react';
 import { data } from 'autoprefixer';
 import PostConfig from './AlgoPost';
-import toast from './Toast';
+import toast from '../base/Toast';
 
 export default function ModelConfig({ model, onClose, onSaved }) {
     const [loading, setLoading] = useState(true);

@@ -3,7 +3,7 @@ import { InferenceAPI } from '../../contexts/API';
 import ModelConfig from './ModelConfig';
 import ModelUpload from './ModelUpload';
 import { Trash2, Settings, Box, AlertCircle, Upload, Square, SquareCheckBig, CheckCheck, Check } from 'lucide-react';
-import toast from './Toast';
+import toast from '../base/Toast';
 
 export default function ModelManage({ onModelDeleted }) {
     const [models, setModels] = useState([]);

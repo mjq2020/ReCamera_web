@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { InferenceAPI } from '../../contexts/API';
 import { Send, Save, Wifi, Zap, Trash2 } from 'lucide-react';
 import { jsx } from 'react/jsx-runtime';
-import toast from './Toast';
+import toast from '../base/Toast';
 
 export default function InferenceOutput() {
     const [loading, setLoading] = useState(true);

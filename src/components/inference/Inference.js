@@ -4,7 +4,7 @@ import ModelManage from "./Modelmanage";
 import InferenceOutput from "./InferenceOuput";
 import { Play, Square, Activity, Save } from 'lucide-react';
 import './Inference.css';
-import toast, { ToastProvider } from './Toast';
+import toast, { ToastProvider } from '../base/Toast';
 
 export default function InferencePage() {
     const [inferenceStatus, setInferenceStatus] = useState({

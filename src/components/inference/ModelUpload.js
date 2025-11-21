@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Upload, FileUp, CheckCircle, AlertCircle } from 'lucide-react';
 import { InferenceAPI } from '../../contexts/API';
 import CryptoJS from 'crypto-js';
-import toast from './Toast';
+import toast from '../base/Toast';
 
 export default function ModelUpload({ onClose, onUploadSuccess }) {
     const [isDragging, setIsDragging] = useState(false);
@@ -27,7 +27,7 @@ export default function ModelUpload({ onClose, onUploadSuccess }) {
                     const arrayBuffer = e.target.result;
                     const uint8Array = new Uint8Array(arrayBuffer);
                     const wordArray = CryptoJS.lib.WordArray.create(uint8Array);
-                    
+
                     spark.update(wordArray);
                     currentChunk++;
 
@@ -125,21 +125,21 @@ export default function ModelUpload({ onClose, onUploadSuccess }) {
             console.log('响应头:', startResponse.headers);
             console.log('响应体:', startResponse.data);
             console.log('所有响应头键名:', Object.keys(startResponse.headers));
-            
+
             // 尝试从响应头或响应体中获取 File-Id
-            let fileId = startResponse.headers['file-id'] || 
-                        startResponse.headers['File-Id'] ||
-                        startResponse.headers['fileid'];
-            
+            let fileId = startResponse.headers['file-id'] ||
+                startResponse.headers['File-Id'] ||
+                startResponse.headers['fileid'];
+
             // 如果响应头中没有，尝试从响应体中获取
             if (!fileId && startResponse.data) {
-                fileId = startResponse.data['File-Id'] || 
-                        startResponse.data['file-id'] ||
-                        startResponse.data.fileId ||
-                        startResponse.data.fileid ||
-                        startResponse.data.id;
+                fileId = startResponse.data['File-Id'] ||
+                    startResponse.data['file-id'] ||
+                    startResponse.data.fileId ||
+                    startResponse.data.fileid ||
+                    startResponse.data.id;
             }
-            
+
             console.log('获取到的 fileId:', fileId);
 
             if (!fileId) {
@@ -157,14 +157,14 @@ export default function ModelUpload({ onClose, onUploadSuccess }) {
             // 第三步：分段上传文件内容
             const chunkSize = 524288; // 512KB
             const totalChunks = Math.ceil(selectedFile.size / chunkSize);
-            
+
             for (let i = 0; i < totalChunks; i++) {
                 const start = i * chunkSize;
                 const end = Math.min(start + chunkSize, selectedFile.size);
                 const chunk = selectedFile.slice(start, end);
 
                 await InferenceAPI.uploadModelChunk(fileId, chunk, start, end - 1, selectedFile.size);
-                
+
                 // 更新进度
                 const progress = Math.round(((i + 1) / totalChunks) * 100);
                 setUploadProgress(progress);
