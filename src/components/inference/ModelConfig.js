@@ -38,7 +38,7 @@ export default function ModelConfig({ model, onClose, onSaved }) {
 
     useEffect(() => {
         setalgoConfig(algoConfig => ({ ...algoConfig, [formData.category]: { ...algoConfig[formData.category], ...formData.metrics } }))
-        
+
     }, [])
 
     useEffect(() => {

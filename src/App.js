@@ -7,8 +7,11 @@ import LiveView from './pages/LiveView';
 import RecordSettings from './pages/RecordSettings';
 import AIInference from './pages/AIInference';
 import Terminal from './pages/TerminalLogs';
+import Login from './pages/Login';
+import { useApp } from './contexts/AppContext';
 
 function App() {
+  const { isAuthenticated } = useApp();
   const [activeTab, setActiveTab] = useState('device-info');
 
   const renderContent = () => {
@@ -28,6 +31,12 @@ function App() {
     }
   };
 
+  // 如果未登录，显示登录页面
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  // 已登录，显示主应用界面
   return (
     <div className="app">
       <Header />
