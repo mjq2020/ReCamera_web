@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class LoginRequest(BaseModel):
     sUserName: str = Field(..., min_length=1, max_length=64)
-    sPassword: str = Field(..., min_length=64, max_length=64, pattern=r"^[0-9a-fA-F]{64}$")
+    sPassword: str = Field(..., min_length=1, max_length=64)
 
 
 class LoginResponse(BaseModel):

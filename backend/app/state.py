@@ -168,10 +168,6 @@ class BackendState:
                         "iPositionX": 50,
                         "iPositionY": 244,
                     },
-                    "normalizedScreenSize": {
-                        "iNormalizedScreenHeight": 608,
-                        "iNormalizedScreenWidth": 1080,
-                    },
                 },
                 "osd-inference": {
                     "inferenceOverlay": {"iEnabled": 1}
@@ -241,10 +237,6 @@ class BackendState:
                         "iEnabled": 1,
                         "iPositionX": 120,
                         "iPositionY": 160,
-                    },
-                    "normalizedScreenSize": {
-                        "iNormalizedScreenHeight": 540,
-                        "iNormalizedScreenWidth": 960,
                     },
                 },
                 "osd-inference": {"inferenceOverlay": {"iEnabled": 0}},

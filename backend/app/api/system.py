@@ -28,7 +28,6 @@ def login(payload: LoginRequest, response: Response) -> LoginResponse:
     # if password_hash is None or password_hash.lower() != payload.sPassword.lower():
     #     print(payload.sPassword.lower(),password_hash)
     #     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-
     token = secrets.token_urlsafe(32)
     state.tokens[token] = payload.sUserName
     response.set_cookie("token", token, httponly=True, secure=False)

@@ -81,7 +81,6 @@ class OSDCharSettings(BaseModel):
     channelNameOverlay: ChannelOverlay
     dateTimeOverlay: DateTimeOverlay
     SNOverlay: SNOverlay
-    normalizedScreenSize: NormalizedScreenSize
 
 
 class InferenceOverlay(OverlaySwitch):
@@ -138,3 +137,13 @@ class StreamConfig(BaseModel):
 
 class StreamUpdateRequest(StreamConfig):
     pass
+
+
+class WebRTCOffer(BaseModel):
+    sdp: str
+    type: Literal["offer"]
+
+
+class WebRTCAnswer(BaseModel):
+    sdp: str
+    type: Literal["answer"]
