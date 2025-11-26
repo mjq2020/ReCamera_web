@@ -6,7 +6,7 @@ import TimeSetting from '../components/device_info/TimeInfo';
 import NetworkSetting from '../components/device_info/NetworkInfo';
 import LinkSetting from '../components/device_info/HttpInfo';
 import SystemSetting from '../components/device_info/SystemInfo';
-import toast, { ToastProvider } from '../components/base/Toast';
+import toast from '../components/base/Toast';
 
 
 const DeviceInfo = () => {
@@ -34,8 +34,7 @@ const DeviceInfo = () => {
   ];
 
   return (
-    <ToastProvider>
-      <div className="page-container">
+    <div className="page-container">
         {/* 页面头部 */}
         <div className="page-header">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -110,7 +109,6 @@ const DeviceInfo = () => {
           {tabs.find((tab) => tab.id === activeTabId)?.component}
         </div>
       </div>
-    </ToastProvider>
   )
 };
 

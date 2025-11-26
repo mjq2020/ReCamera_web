@@ -1,5 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { VideoAPI } from "../../../contexts/API";
+import toast from "../../base/Toast";
+
+const DEFAULT_SETTINGS = {
+    streamProtocol: "rtsp",
+    rtsp: {
+        iPort: 554
+    },
+    rtmp: {
+        sURL: "",
+        iAuthType: 0,
+    },
+    onvif: {
+        sUserName: "",
+        sPassword: ""
+    }
+}
 
 export default function StreamSettings() {
     const [settings, setSettings] = useState({
@@ -64,13 +80,23 @@ export default function StreamSettings() {
         setLoading(true);
         try {
             await VideoAPI.postVideoStream(0, settings);
-            alert("推流设置保存成功！");
+            toast.success("推流设置保存成功！");
         } catch (err) {
             console.error("保存推流设置失败:", err);
-            alert("保存失败：" + err.message);
+            toast.error("保存失败：" + err.message);
         } finally {
             setLoading(false);
         }
+    };
+    const handleReset = async () => {
+        toast.confirm("确定要恢复默认设置吗？").then(confirmed => {
+            if (!confirmed) {
+                return;
+            }
+            setSettings(DEFAULT_SETTINGS);
+            loadSettings();
+        });
+        toast.success("恢复默认设置成功！");
     };
 
     return (
@@ -219,7 +245,7 @@ export default function StreamSettings() {
                 <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
                     {loading ? "保存中..." : "保存设置"}
                 </button>
-                <button className="btn btn-secondary" onClick={loadSettings}>
+                <button className="btn btn-secondary" onClick={handleReset}>
                     重置
                 </button>
             </div>

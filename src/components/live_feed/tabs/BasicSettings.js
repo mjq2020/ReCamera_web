@@ -1,7 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { VideoAPI } from "../../../contexts/API";
+import toast from "../../base/Toast";
 
-export default function BasicSettings() {
+const DEFAULT_SETTINGS = {
+    "mainStream": {
+        "id": 0,
+        "sStreamType": "mainStream",
+        "sResolution": "1920*1080",
+        "sOutputDataType": "H.264",
+        "sFrameRate": "30",
+        "iMaxRate": 4096,
+        "iGOP": 50,
+        "sRCMode": "VBR",
+        "sRCQuality": "high"
+    }, "subStream": {
+        "id": 1,
+        "sStreamType": "subStream",
+        "sResolution": "1920*1080",
+        "sOutputDataType": "H.264",
+        "sFrameRate": "30",
+        "iMaxRate": 4096,
+        "iGOP": 50,
+        "sRCMode": "VBR",
+        "sRCQuality": "high"
+    }
+}
+
+export default function BasicSettings({ mainStream, setMainStream }) {
+
     const [settings, setSettings] = useState({
         id: 0,
         sStreamType: "mainStream",
@@ -19,29 +45,47 @@ export default function BasicSettings() {
     // 加载当前设置
     useEffect(() => {
         loadSettings();
-    }, []);
+        // console.log("mainStream", mainStream);
+        console.log("settings", settings);
+    }, [mainStream]);
 
     const loadSettings = async () => {
         try {
-            const response = await VideoAPI.getVideoEncode(0);
+            const response = await VideoAPI.getVideoEncode(mainStream ? 0 : 1);
             setSettings(response.data);
         } catch (err) {
-            console.error("加载设置失败:", err);
+            toast.error("加载设置失败:", err);
         }
     };
 
+    // reset settings to default settings
+    const resetSettings = () => {
+        toast.confirm("确定要重置设置吗？").then(confirmed => {
+            if (!confirmed) {
+                return;
+            }
+            handleSave();
+            toast.success("设置重置成功！");
+            loadSettings();
+        }).catch(err => {
+            toast.error("重置失败：" + err.message);
+        });
+    };
+
     const handleChange = (field, value) => {
+        if (field === "sStreamType") {
+            setMainStream(value === "mainStream" ? true : false);
+        }
         setSettings(prev => ({ ...prev, [field]: value }));
     };
 
     const handleSave = async () => {
         setLoading(true);
         try {
-            await VideoAPI.putVideoEncode(0, settings);
-            alert("设置保存成功！");
+            await VideoAPI.putVideoEncode(mainStream ? 0 : 1, settings);
+            toast.success("设置保存成功！");
         } catch (err) {
-            console.error("保存设置失败:", err);
-            alert("保存失败：" + err.message);
+            toast.error("保存失败：" + err.message);
         } finally {
             setLoading(false);
         }
@@ -91,47 +135,18 @@ export default function BasicSettings() {
                 </div>
                 <div className="form-group">
                     <label>帧率 (FPS)</label>
-                    <select
+                    <input
+                        type="number"
                         className="form-control"
                         value={settings.sFrameRate}
                         onChange={(e) => handleChange("sFrameRate", e.target.value)}
-                    >
-                        <option value="60">60</option>
-                        <option value="30">30</option>
-                        <option value="25">25</option>
-                        <option value="20">20</option>
-                        <option value="15">15</option>
-                        <option value="10">10</option>
-                    </select>
+                        min="1"
+                        max="120"
+                    />
                 </div>
             </div>
 
-            <div className="form-row">
-                <div className="form-group">
-                    <label>码率控制模式</label>
-                    <select
-                        className="form-control"
-                        value={settings.sRCMode}
-                        onChange={(e) => handleChange("sRCMode", e.target.value)}
-                    >
-                        <option value="CBR">CBR (固定码率)</option>
-                        <option value="VBR">VBR (可变码率)</option>
-                    </select>
-                </div>
-                <div className="form-group">
-                    <label>码率质量</label>
-                    <select
-                        className="form-control"
-                        value={settings.sRCQuality}
-                        onChange={(e) => handleChange("sRCQuality", e.target.value)}
-                    >
-                        <option value="highest">最高</option>
-                        <option value="high">高</option>
-                        <option value="medium">中</option>
-                        <option value="low">低</option>
-                    </select>
-                </div>
-            </div>
+
 
             <div className="form-row">
                 <div className="form-group">
@@ -157,12 +172,38 @@ export default function BasicSettings() {
                     />
                 </div>
             </div>
+            <div className="form-row">
+                <div className="form-group">
+                    <label>码率控制模式</label>
+                    <select
+                        className="form-control"
+                        value={settings.sRCMode}
+                        onChange={(e) => handleChange("sRCMode", e.target.value)}
+                    >
+                        <option value="CBR">CBR (固定码率)</option>
+                        <option value="VBR">VBR (可变码率)</option>
+                    </select>
+                </div>
+                {settings.sRCMode === "VBR" && <div className="form-group">
+                    <label>码率质量</label>
+                    <select
+                        className="form-control"
+                        value={settings.sRCQuality}
+                        onChange={(e) => handleChange("sRCQuality", e.target.value)}
+                    >
+                        <option value="highest">最高</option>
+                        <option value="high">高</option>
+                        <option value="medium">中</option>
+                        <option value="low">低</option>
+                    </select>
+                </div>}
+            </div>
 
             <div className="button-group">
                 <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
                     {loading ? "保存中..." : "保存设置"}
                 </button>
-                <button className="btn btn-secondary" onClick={loadSettings}>
+                <button className="btn btn-secondary" onClick={resetSettings}>
                     重置
                 </button>
             </div>

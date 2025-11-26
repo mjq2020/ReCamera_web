@@ -4,7 +4,7 @@ import ModelManage from "./Modelmanage";
 import InferenceOutput from "./InferenceOuput";
 import { Play, Square, Activity, Save } from 'lucide-react';
 import './Inference.css';
-import toast, { ToastProvider } from '../base/Toast';
+import toast from '../base/Toast';
 
 export default function InferencePage() {
     const [inferenceStatus, setInferenceStatus] = useState({
@@ -111,8 +111,7 @@ export default function InferencePage() {
     }
 
     return (
-        <ToastProvider>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {/* 模型管理 */}
                 <ModelManage onModelDeleted={loadModels} />
 
@@ -262,7 +261,6 @@ export default function InferencePage() {
                 {/* 推理输出配置 */}
                 <InferenceOutput />
             </div>
-        </ToastProvider>
     );
 }
 

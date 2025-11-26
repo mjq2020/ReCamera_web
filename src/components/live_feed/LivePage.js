@@ -6,46 +6,51 @@ import "./LivePage.css";
 export default function LivePage() {
     const [maskSettings, setMaskSettings] = useState(null);
     const [isDrawingMode, setIsDrawingMode] = useState(false);
+    const [mainStream, setMainStream] = useState(true);
 
     return (
         <div className="live-page-container">
-            <div className="live-page-header">
-                <h2>实时视频监控</h2>
-                <p className="page-description">实时查看视频流并进行画面参数配置</p>
-            </div>
-            <div className="live-page-content">
-                <div className="live-player-section">
-                    <Player 
-                        maskSettings={maskSettings}
-                        isDrawingMode={isDrawingMode}
-                        onMaskDrawn={(newMask, updatedMasks) => {
-                            if (maskSettings) {
-                                if (updatedMasks) {
-                                    // 更新整个遮盖数组（用于拖拽和调整大小）
-                                    setMaskSettings({
-                                        ...maskSettings,
-                                        privacyMask: updatedMasks
-                                    });
-                                } else if (newMask) {
-                                    // 添加新遮盖（用于绘制新区域）
-                                    setMaskSettings({
-                                        ...maskSettings,
-                                        privacyMask: [...maskSettings.privacyMask, newMask]
-                                    });
+                <div className="live-page-header">
+                    <h2>实时视频监控</h2>
+                    <p className="page-description">实时查看视频流并进行画面参数配置</p>
+                </div>
+                <div className="live-page-content">
+                    <div className="live-player-section">
+                        <Player
+                            maskSettings={maskSettings}
+                            isDrawingMode={isDrawingMode}
+                            mainStream={mainStream}
+                            onMaskDrawn={(newMask, updatedMasks) => {
+                                if (maskSettings) {
+                                    if (updatedMasks) {
+                                        // 更新整个遮盖数组（用于拖拽和调整大小）
+                                        setMaskSettings({
+                                            ...maskSettings,
+                                            privacyMask: updatedMasks
+                                        });
+                                    } else if (newMask) {
+                                        // 添加新遮盖（用于绘制新区域）
+                                        setMaskSettings({
+                                            ...maskSettings,
+                                            privacyMask: [...maskSettings.privacyMask, newMask]
+                                        });
+                                    }
                                 }
-                            }
-                        }}
-                    />
-                </div>
-                <div className="live-settings-section">
-                    <LiveSetting 
-                        maskSettings={maskSettings}
-                        setMaskSettings={setMaskSettings}
-                        isDrawingMode={isDrawingMode}
-                        setIsDrawingMode={setIsDrawingMode}
-                    />
+                            }}
+                        />
+                    </div>
+                    <div className="live-settings-section">
+                        <LiveSetting
+                            maskSettings={maskSettings}
+                            setMaskSettings={setMaskSettings}
+                            isDrawingMode={isDrawingMode}
+                            setIsDrawingMode={setIsDrawingMode}
+                            mainStream={mainStream}
+                            setMainStream={setMainStream}
+
+                        />
+                    </div>
                 </div>
             </div>
-        </div>
     );
 }

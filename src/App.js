@@ -9,6 +9,7 @@ import AIInference from './pages/AIInference';
 import Terminal from './pages/TerminalLogs';
 import Login from './pages/Login';
 import { useApp } from './contexts/AppContext';
+import { ToastProvider } from './components/base/Toast';
 
 function App() {
   const { isAuthenticated } = useApp();
@@ -38,15 +39,17 @@ function App() {
 
   // 已登录，显示主应用界面
   return (
-    <div className="app">
-      <Header />
-      <div className="app-container">
-        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
-        <div className="content-area">
-          {renderContent()}
+    <ToastProvider>
+      <div className="app">
+        <Header />
+        <div className="app-container">
+          <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
+          <div className="content-area">
+            {renderContent()}
+          </div>
         </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 }
 

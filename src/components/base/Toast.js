@@ -343,7 +343,10 @@ class ToastManager {
     }
 
     subscribe(listener) {
-        this.listeners.push(listener);
+        // 防止重复订阅：如果已经有这个 listener 就不再添加
+        if (!this.listeners.includes(listener)) {
+            this.listeners.push(listener);
+        }
         return () => {
             this.listeners = this.listeners.filter(l => l !== listener);
         };

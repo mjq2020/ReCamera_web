@@ -7,11 +7,11 @@ import MaskSettings from "./tabs/MaskSettings";
 import StreamSettings from "./tabs/StreamSettings";
 import "./LivePage.css";
 
-export default function LiveSetting({ maskSettings, setMaskSettings, isDrawingMode, setIsDrawingMode }) {
+export default function LiveSetting({ maskSettings, setMaskSettings, isDrawingMode, setIsDrawingMode,mainStream,setMainStream }) {
     const [activeTab, setActiveTab] = useState("basic");
 
     const tabs = [
-        { id: "basic", label: "基础设置", icon: "⚙️", component: BasicSettings, props: {} },
+        { id: "basic", label: "基础设置", icon: "⚙️", component: BasicSettings, props: { mainStream,setMainStream } },
         { id: "display", label: "显示设置", icon: "🎨", component: DisplaySettings, props: {} },
         { id: "osd", label: "OSD设置", icon: "📝", component: OSDSettings, props: {} },
         { id: "ai", label: "AI结果", icon: "🤖", component: AISettings, props: {} },

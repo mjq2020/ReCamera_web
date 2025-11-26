@@ -1,5 +1,34 @@
 import React, { useState, useEffect } from "react";
 import { VideoAPI } from "../../../contexts/API";
+import toast from "../../base/Toast";
+
+const DEFAULT_SETTINGS = {
+    attribute: {
+        iOSDFontSize: 32,
+        sOSDFrontColor: "FFFFFF",
+        sOSDFrontColorMode: "customize",
+        iEnabled: 1
+    },
+    channelNameOverlay: {
+        iEnabled: 1,
+        iPositionX: 10,
+        iPositionY: 10,
+        sChannelName: "摄像头 01"
+    },
+    dateTimeOverlay: {
+        iEnabled: 1,
+        iDisplayWeekEnabled: 1,
+        iPositionX: 10,
+        iPositionY: 50,
+        sDateStyle: "YYYY-MM-DD",
+        sTimeStyle: "24hour"
+    },
+    SNOverlay: {
+        iEnabled: 1,
+        iPositionX: 10,
+        iPositionY: 90
+    }
+}
 
 export default function OSDSettings() {
     const [settings, setSettings] = useState({
@@ -63,15 +92,25 @@ export default function OSDSettings() {
         setLoading(true);
         try {
             await VideoAPI.putVideoOsdChar(0, settings);
-            alert("OSD设置保存成功！");
+            toast.success("OSD设置保存成功！");
         } catch (err) {
             console.error("保存OSD设置失败:", err);
-            alert("保存失败：" + err.message);
+            toast.error("保存失败：" + err.message);
         } finally {
             setLoading(false);
         }
     };
 
+    const handleReset = async () => {
+        toast.confirm("确定要恢复默认设置吗？").then(confirmed => {
+            if (!confirmed) {
+                return;
+            }
+            setSettings(DEFAULT_SETTINGS);
+            loadSettings();
+        });
+        toast.success("恢复默认设置成功！");
+    };
     return (
         <div className="settings-tab">
             <div className="settings-section">
@@ -282,7 +321,7 @@ export default function OSDSettings() {
                     <button className="btn btn-primary" onClick={handleSave} disabled={loading}>
                         {loading ? "保存中..." : "保存设置"}
                     </button>
-                    <button className="btn btn-secondary" onClick={loadSettings}>
+                    <button className="btn btn-secondary" onClick={handleReset}>
                         重置
                     </button>
                 </div>

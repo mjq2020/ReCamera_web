@@ -12,7 +12,7 @@ const axiosInstance = axios.create({
     }
 });
 
-export default function Player({ maskSettings, isDrawingMode, onMaskDrawn }) {
+export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainStream }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -40,33 +40,36 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn }) {
             setIsLoading(true);
             setError(null);
 
+            // 根据 mainStream 参数确定使用主码流（0）还是子码流（1）
+            const streamId = mainStream ? 0 : 1;
+            const streamType = mainStream ? "主码流" : "子码流";
+            console.log(`准备连接 ${streamType}（stream_id: ${streamId}）`);
+
+            // 创建 RTCPeerConnection（局域网直连，不使用 STUN 服务器）
             const pc = new RTCPeerConnection({
-                iceServers: [
-                    { urls: "stun:stun.l.google.com:19302" },
-                    { urls: "stun:stun1.l.google.com:19302" }
-                ]
+                iceServers: []
             });
 
             pcRef.current = pc;
 
             pc.ontrack = (event) => {
-                console.log("收到远程视频流", event.streams);
+                console.log(`收到远程视频流（${streamType}）`, event.streams);
                 if (videoRef.current && event.streams[0]) {
                     videoRef.current.srcObject = event.streams[0];
                 }
             };
 
             pc.onconnectionstatechange = () => {
-                console.log("连接状态:", pc.connectionState);
+                console.log(`连接状态（${streamType}）:`, pc.connectionState);
                 setIsConnected(pc.connectionState === "connected");
                 if (pc.connectionState === "failed") {
-                    setError("WebRTC连接失败");
+                    setError(`WebRTC连接失败（${streamType}）`);
                     setIsLoading(false);
                 }
             };
 
             pc.oniceconnectionstatechange = () => {
-                console.log("ICE连接状态:", pc.iceConnectionState);
+                console.log(`ICE连接状态（${streamType}）:`, pc.iceConnectionState);
                 if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
                     setIsLoading(false);
                 }
@@ -79,7 +82,8 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn }) {
 
             await pc.setLocalDescription(offer);
 
-            const response = await axiosInstance.post("webrtc/offer", {
+            // 使用带 stream_id 的 API 路径
+            const response = await axiosInstance.post(`webrtc/offer/${streamId}`, {
                 sdp: offer.sdp,
                 type: offer.type
             });
@@ -87,7 +91,7 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn }) {
             const answer = response.data;
             await pc.setRemoteDescription(new RTCSessionDescription(answer));
 
-            console.log("WebRTC连接建立成功");
+            console.log(`WebRTC连接建立成功（${streamType}）`);
 
         } catch (err) {
             console.error("创建WebRTC连接失败:", err);
@@ -95,6 +99,14 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn }) {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (isConnected) {
+            closeConnection();
+            createPeerConnection();
+        }
+        
+    }, [mainStream]);
 
     const closeConnection = () => {
         if (pcRef.current) {
