@@ -49,21 +49,18 @@ class BLC(BaseModel):
 class WhiteBalance(BaseModel):
     iWhiteBalanceCT: int = Field(..., ge=2800, le=7500)
     sWhiteBlanceStyle: Literal[
-        "autoWhiteBalance",
-        "manualWhiteBalance",
+        "auto",
+        "manual",
         "natural",
         "streetlight",
         "outdoor",
-        "自然光",
-        "路灯",
-        "室外",
     ]
 
 
 class ImageEnhancement(BaseModel):
     iSpatialDenoiseLevel: int = Field(..., ge=0, le=100)
     iTemporalDenoiseLevel: int = Field(..., ge=0, le=100)
-    sNoiseReduceMode: Literal["close", "mixnr", "2dnr", "3dnr"]
+    sNoiseReduceMode: int
 
 
 class ProfileConfig(BaseModel):

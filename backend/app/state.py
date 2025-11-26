@@ -312,12 +312,12 @@ class BackendState:
                         },
                         "whiteBlance": {
                             "iWhiteBalanceCT": 2800,
-                            "sWhiteBlanceStyle": "manualWhiteBalance",
+                            "sWhiteBlanceStyle": "manual",
                         },
                         "imageEnhancement": {
                             "iSpatialDenoiseLevel": 50,
                             "iTemporalDenoiseLevel": 50,
-                            "sNoiseReduceMode": "mixnr",
+                            "sNoiseReduceMode": 0,
                         },
                     }
                     for _ in range(3)

@@ -35,7 +35,8 @@ router = APIRouter(prefix="/cgi-bin/entry.cgi", tags=["video"])
 pcs: Set[RTCPeerConnection] = set()
 
 # 视频文件路径
-VIDEO_PATH = "/home/dq/github/RC2Web/test/people-walking.mp4"
+MAIN_VIDEO_PATH = "/home/dq/github/RC2Web/test/people-walking.mp4"
+SUB_VIDEO_PATH = "/home/dq/github/RC2Web/test/car_identify.mp4"
 
 
 class LocalVideoTrack(VideoStreamTrack):
@@ -151,6 +152,7 @@ def _get_stream(stream_id: int) -> Dict[str, Dict]:
 @router.get("/video/{stream_id}/encode", response_model=EncodeSettings)
 def get_encode(stream_id: int, _: str = Depends(require_auth)) -> EncodeSettings:
     stream = _get_stream(stream_id)
+    print("stream", stream_id,stream)
     return EncodeSettings(**stream.get("encode", {}))
 
 
@@ -213,11 +215,23 @@ def update_stream_config(stream_id: int, payload: StreamUpdateRequest, _: str = 
     return StreamConfig(**stream["stream"])
 
 
-@router.post("/webrtc/offer", response_model=WebRTCAnswer)
-async def webrtc_offer(offer: WebRTCOffer, _: str = Depends(require_auth)) -> WebRTCAnswer:
+@router.post("/webrtc/offer/{stream_id}", response_model=WebRTCAnswer)
+async def webrtc_offer(stream_id: int, offer: WebRTCOffer, _: str = Depends(require_auth)) -> WebRTCAnswer:
     """
     处理 WebRTC offer 并返回 answer
+    stream_id: 0 为主码流，1 为子码流
     """
+    # 验证 stream_id
+    if stream_id not in [0, 1]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="stream_id 必须是 0（主码流）或 1（子码流）"
+        )
+    
+    stream_type = "主码流" if stream_id == 0 else "子码流"
+    VIDEO_PATH = MAIN_VIDEO_PATH if stream_id == 0 else SUB_VIDEO_PATH
+    logger.info(f"收到 {stream_type} 的 WebRTC offer 请求")
+    
     # 检查视频文件是否存在
     if not Path(VIDEO_PATH).exists():
         logger.error(f"视频文件不存在: {VIDEO_PATH}")
@@ -226,19 +240,12 @@ async def webrtc_offer(offer: WebRTCOffer, _: str = Depends(require_auth)) -> We
             detail=f"视频文件不存在: {VIDEO_PATH}"
         )
     
-    # 配置 ICE 服务器（用于 NAT 穿透）
-    configuration = RTCConfiguration(
-        iceServers=[
-            RTCIceServer(urls=["stun:stun.l.google.com:19302"]),
-            RTCIceServer(urls=["stun:stun1.l.google.com:19302"]),
-        ]
-    )
-    
-    # 创建 RTCPeerConnection
+    # 创建 RTCPeerConnection（不使用 ICE 服务器，局域网直连）
+    configuration = RTCConfiguration(iceServers=[])
     pc = RTCPeerConnection(configuration=configuration)
     pcs.add(pc)
     
-    logger.info(f"创建新的 WebRTC 连接，当前活跃连接数: {len(pcs)}")
+    logger.info(f"创建新的 WebRTC 连接（{stream_type}），当前活跃连接数: {len(pcs)}")
     
     # 创建本地视频轨道
     local_video = LocalVideoTrack(VIDEO_PATH)
@@ -248,16 +255,16 @@ async def webrtc_offer(offer: WebRTCOffer, _: str = Depends(require_auth)) -> We
         """
         监听连接状态变化
         """
-        logger.info(f"WebRTC 连接状态变化: {pc.connectionState}")
+        logger.info(f"WebRTC 连接状态变化（{stream_type}）: {pc.connectionState}")
         if pc.connectionState == "connected":
-            logger.info("WebRTC 连接已建立")
+            logger.info(f"WebRTC 连接已建立（{stream_type}）")
         elif pc.connectionState == "failed":
-            logger.warning("WebRTC 连接失败")
+            logger.warning(f"WebRTC 连接失败（{stream_type}）")
             await pc.close()
             pcs.discard(pc)
             local_video.stop()
         elif pc.connectionState == "closed":
-            logger.info("WebRTC 连接已关闭")
+            logger.info(f"WebRTC 连接已关闭（{stream_type}）")
             pcs.discard(pc)
             local_video.stop()
     
@@ -266,18 +273,18 @@ async def webrtc_offer(offer: WebRTCOffer, _: str = Depends(require_auth)) -> We
         """
         监听 ICE 连接状态变化
         """
-        logger.info(f"ICE 连接状态: {pc.iceConnectionState}")
+        logger.info(f"ICE 连接状态（{stream_type}）: {pc.iceConnectionState}")
     
     @pc.on("icegatheringstatechange")
     async def on_icegatheringstatechange():
         """
         监听 ICE 收集状态变化
         """
-        logger.info(f"ICE 收集状态: {pc.iceGatheringState}")
+        logger.info(f"ICE 收集状态（{stream_type}）: {pc.iceGatheringState}")
     
     # 添加视频轨道到 peer connection
     pc.addTrack(local_video)
-    logger.info("视频轨道已添加到 WebRTC 连接")
+    logger.info(f"视频轨道已添加到 WebRTC 连接（{stream_type}）")
     
     try:
         # 设置远程描述
