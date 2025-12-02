@@ -40,10 +40,11 @@ const Login = () => {
         sPassword: formData.sPassword
       }
       const result = await DeviceInfoAPI.login(data);
-      
+      console.log(result)
       // 检查后端返回的 iStatus，0 表示成功
-      if (result.data && result.data.iStatus === 0) {
+      if (result.data && result.data.iStatus == 0) {
         // 登录成功，更新前端登录状态
+        console.log(11111);
         login(formData.sUserName);
         // 登录成功后，App 组件会自动处理页面跳转
       } else {
