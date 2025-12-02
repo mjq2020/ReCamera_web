@@ -79,7 +79,7 @@ class ImageConfig(BaseModel):
 
 
 class ImageSceneRequest(BaseModel):
-    iProfileCur: int = Field(..., ge=0, le=2)
+    iProfile: int = Field(..., ge=-1, le=2)
 
 
 class ImageVideoAdjustmentRequest(VideoAdjustment):

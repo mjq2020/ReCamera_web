@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { VideoAPI } from "../../../contexts/API";
 import toast from "../../base/Toast";
 
@@ -122,6 +122,175 @@ const DEFAULT_SETTINGS = {
             }
         }
     ]
+}
+const configNames = {
+    0: "通用",
+    1: "白天",
+    2: "夜晚"
+}
+
+const BLCNAME2DISPLAY = {
+    sHDR: "iHDRLevel",
+    sBLCRegion: "iBLCStrength",
+    sHLC: "iHLCLevel",
+}
+
+// 双滑块时间范围选择器组件
+function DualTimeSlider({ dawnTime, duskTime, onChange }) {
+    const sliderRef = useRef(null);
+    const [dragging, setDragging] = useState(null); // 'dawn' or 'dusk'
+
+    const secondsToTime = (seconds) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+    };
+
+    const getPositionFromSeconds = (seconds) => {
+        return (seconds / 86400) * 100;
+    };
+
+    const getSecondsFromPosition = (clientX) => {
+        if (!sliderRef.current) return 0;
+        const rect = sliderRef.current.getBoundingClientRect();
+        const position = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        const seconds = Math.round(position * 86400 / 600) * 600; // 10分钟间隔
+        return Math.max(0, Math.min(86400, seconds));
+    };
+
+    const handleMouseDown = (type) => (e) => {
+        e.preventDefault();
+        setDragging(type);
+    };
+
+    const handleMouseMove = (e) => {
+        if (!dragging) return;
+        const newSeconds = getSecondsFromPosition(e.clientX);
+
+        if (dragging === 'dawn') {
+            if (newSeconds < duskTime) {
+                onChange(newSeconds, duskTime);
+            }
+        } else if (dragging === 'dusk') {
+            if (newSeconds > dawnTime) {
+                onChange(dawnTime, newSeconds);
+            }
+        }
+    };
+
+    const handleMouseUp = () => {
+        setDragging(null);
+    };
+
+    useEffect(() => {
+        if (dragging) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [dragging, dawnTime, duskTime]);
+
+    const dawnPos = getPositionFromSeconds(dawnTime);
+    const duskPos = getPositionFromSeconds(duskTime);
+
+    return (
+        <div style={{ padding: '20px 10px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <span style={{ fontSize: '14px', color: '#3b82f6' }}>
+                    晨曦: {secondsToTime(dawnTime)}
+                </span>
+                <span style={{ fontSize: '14px', color: '#ef4444' }}>
+                    黄昏: {secondsToTime(duskTime)}
+                </span>
+            </div>
+            <div
+                ref={sliderRef}
+                style={{
+                    position: 'relative',
+                    height: '40px',
+                    cursor: 'pointer'
+                }}
+            >
+                {/* 滑轨背景 */}
+                <div style={{
+                    position: 'absolute',
+                    top: '18px',
+                    left: '0',
+                    right: '0',
+                    height: '4px',
+                    backgroundColor: '#e5e7eb',
+                    borderRadius: '2px'
+                }} />
+
+                {/* 选中范围 */}
+                <div style={{
+                    position: 'absolute',
+                    top: '18px',
+                    left: `${dawnPos}%`,
+                    width: `${duskPos - dawnPos}%`,
+                    height: '4px',
+                    backgroundColor: '#3b82f6',
+                    borderRadius: '2px'
+                }} />
+
+                {/* 晨曦滑块 */}
+                <div
+                    onMouseDown={handleMouseDown('dawn')}
+                    style={{
+                        position: 'absolute',
+                        left: `${dawnPos}%`,
+                        top: '10px',
+                        width: '20px',
+                        height: '20px',
+                        backgroundColor: '#3b82f6',
+                        borderRadius: '50%',
+                        border: '3px solid white',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        cursor: 'grab',
+                        transform: 'translateX(-50%)',
+                        zIndex: dragging === 'dawn' ? 10 : 5
+                    }}
+                />
+
+                {/* 黄昏滑块 */}
+                <div
+                    onMouseDown={handleMouseDown('dusk')}
+                    style={{
+                        position: 'absolute',
+                        left: `${duskPos}%`,
+                        top: '10px',
+                        width: '20px',
+                        height: '20px',
+                        backgroundColor: '#ef4444',
+                        borderRadius: '50%',
+                        border: '3px solid white',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                        cursor: 'grab',
+                        transform: 'translateX(-50%)',
+                        zIndex: dragging === 'dusk' ? 10 : 5
+                    }}
+                />
+            </div>
+
+            {/* 时间刻度 */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                marginTop: '5px',
+                fontSize: '12px',
+                color: '#6b7280'
+            }}>
+                <span>00:00</span>
+                <span>06:00</span>
+                <span>12:00</span>
+                <span>18:00</span>
+                <span>24:00</span>
+            </div>
+        </div>
+    );
 }
 
 export default function DisplaySettings() {
@@ -249,6 +418,7 @@ export default function DisplaySettings() {
     });
     const [prevblc, setPrevblc] = useState("close");
     const [currentBLC, setCurrentBLC] = useState("close");
+    const [isEditing, setIsEditing] = useState(false);
 
     const loadSettings = async () => {
         try {
@@ -275,6 +445,100 @@ export default function DisplaySettings() {
         });
     }, [currentProfile, settings]);
 
+    const handleSaveVideoAdjustment = async () => {
+        try {
+            await VideoAPI.putVideoAdjustment(settings.videoAdjustment);
+            toast.success("画面设置保存成功！");
+        } catch (err) {
+            toast.error("保存失败：" + err.message);
+        }
+    }
+
+    const handleSaveNightToDay = async () => {
+        try {
+
+            await VideoAPI.putNightToDay(settings.nightToDay);
+            toast.success("日夜设置保存成功！");
+        } catch (err) {
+            toast.error("保存失败：" + err.message);
+        }
+    }
+
+    const handleEditProfile = async (profileId) => {
+        try {
+            const data = {
+                "iProfile": isEditing ? -1 : profileId
+            }
+            await VideoAPI.putScene(data);
+            toast.success("日夜设置保存成功！");
+        } catch (err) {
+            toast.error("保存失败：" + err.message);
+        }
+        setIsEditing(!isEditing);
+    }
+
+    const handleSaveAdjustment = async (profileId) => {
+        try {
+            await VideoAPI.putAdjustment(profileId, settings.profile[profileId].imageAdjustment);
+            toast.success("图像基础调节保存成功！");
+        } catch (err) {
+            toast.error("保存失败：" + err.message);
+        }
+    }
+
+    const handleSaveExposure = async (data = null) => {
+        try {
+            if (data === null) {
+                await VideoAPI.putExposure(currentProfile, settings.profile[currentProfile].exposure);
+            } else {
+                await VideoAPI.putExposure(currentProfile, data);
+            }
+            toast.success("曝光参数保存成功！");
+        } catch (err) {
+            toast.error("保存失败：" + err.message);
+        }
+    }
+
+    const handleSaveBLC = async (data = null) => {
+        try {
+            if (data === null) {
+                await VideoAPI.putBLC(currentProfile, settings.profile[currentProfile].BLC);
+            } else {
+                await VideoAPI.putBLC(currentProfile, data);
+            }
+            toast.success("背光参数保存成功！");
+        } catch (err) {
+            toast.error("保存失败：" + err.message);
+        }
+    }
+
+    const handleSaveWhiteBlance = async (data = null) => {
+        try {
+            if (data === null) {
+                await VideoAPI.putWhiteBlance(currentProfile, settings.profile[currentProfile].whiteBlance);
+            } else {
+                await VideoAPI.putWhiteBlance(currentProfile, data);
+            }
+            toast.success("白平衡参数保存成功！");
+        } catch (err) {
+            toast.error("保存失败：" + err.message);
+        }
+    }
+
+    const handleSaveImageEnhancement = async (data=null) => {
+        try {
+            if (data === null) {
+                await VideoAPI.putEnhancement(currentProfile, settings.profile[currentProfile].imageEnhancement);
+            } else {
+                await VideoAPI.putEnhancement(currentProfile, data);
+            }
+            toast.success("增强算法参数保存成功！");
+        } catch (err) {
+            toast.error("保存失败：" + err.message);
+        }
+    }
+
+
     // 当 currentBLC 变化时更新 BLC 设置
     useEffect(() => {
         if (prevblc !== currentBLC) {
@@ -288,6 +552,7 @@ export default function DisplaySettings() {
                 } : profile;
             });
             setSettings(prev => ({ ...prev, profile: newProfile }));
+            handleSaveBLC(newProfile[currentProfile].BLC);
         }
     }, [currentBLC]);
 
@@ -311,13 +576,23 @@ export default function DisplaySettings() {
                 : profile
         );
         setSettings(prev => ({ ...prev, profile: newProfile }));
-        console.log("保存显示设置:", settings);
+        if (category === "exposure" && field !== "iExposureGain") {
+            handleSaveExposure(newProfile[currentProfile].exposure);
+        } else if (category === "whiteBlance" && field === "sWhiteBlanceStyle") {
+            handleSaveWhiteBlance(newProfile[currentProfile].whiteBlance);
+        }else if (category === "imageEnhancement" && field === "sNoiseReduceMode") {
+            handleSaveImageEnhancement(newProfile[currentProfile].imageEnhancement);
+        }
     };
     // save settings
     const handleSave = async () => {
 
         try {
-            await VideoAPI.postImageAll(settings);
+            await VideoAPI.postSceneSave();
+            const data = {
+                "iProfile": -1
+            }
+            await VideoAPI.putScene(data);
             toast.success("显示设置保存成功！");
         } catch (err) {
             toast.error("保存失败：" + err.message);
@@ -384,6 +659,12 @@ export default function DisplaySettings() {
 
                         </select>
                     </div>
+                    <div className="form-group">
+                        <label>&nbsp;</label>
+                        <button className="btn btn-primary" onClick={handleSaveVideoAdjustment}>
+                            保存画面设置
+                        </button>
+                    </div>
                 </div>
 
 
@@ -427,23 +708,73 @@ export default function DisplaySettings() {
                             onChange={(e) => handleAttributeChange("nightToDay", "iNightToDayFilterTime", Number(e.target.value))}
                         />
                     </div>
+                    <div className="form-group">
+                        <label>&nbsp;</label>
+                        <button className="btn btn-primary" onClick={handleSaveNightToDay}>
+                            保存日夜设置
+                        </button>
+                    </div>
                 </div>
+                {settings.nightToDay.iMode === 1 && (
+                    <div className="form-group" style={{ width: '100%' }}>
+                        <DualTimeSlider
+                            dawnTime={settings.nightToDay.iDawnTime}
+                            duskTime={settings.nightToDay.iDuskTime}
+                            onChange={(newDawn, newDusk) => {
+                                setSettings(prev => ({
+                                    ...prev,
+                                    nightToDay: {
+                                        ...prev.nightToDay,
+                                        iDawnTime: newDawn,
+                                        iDuskTime: newDusk
+                                    }
+                                }));
+                            }}
+                        />
+                    </div>
+                )}
             </div>
 
             <div className="settings-section">
-                <h4>图像基础调节</h4>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '16px' }}>
+                    <h4>图像基础调节</h4>
+                    <span style={{ fontSize: '12px', color: '#64748b' }}>正在使用配置:
+                        <span style={{ fontSize: '12px', color: 'rgb(35, 164, 67)', backgroundColor: 'rgb(252, 250, 250)', borderRadius: '4px' }}> {configNames[currentProfile]}</span>
+                    </span>
+                </div>
+
                 <div className="form-row">
                     <div className="form-group">
                         <label>选择配置文件</label>
                         <select className="form-control"
                             value={currentProfile}
                             onChange={(e) => setCurrentProfile(Number(e.target.value))}
+                            disabled={isEditing}
                         >
                             <option value="0">通用</option>
                             <option value="1">白天</option>
                             <option value="2">夜晚</option>
                         </select>
                     </div>
+                    <div className="form-group">
+                        <button className="btn btn-custom"
+                            style={isEditing ? { backgroundColor: '#3b82f6', color: 'white' } : { backgroundColor: '#2b0050', color: 'white' }}
+                            onClick={(e) => handleEditProfile(currentProfile)}>
+                            {isEditing ? "退出编辑" : "编辑配置"}
+                        </button>
+                        {/* <label>&nbsp;</label> */}
+
+                        {isEditing && (<button className="btn btn-primary" onClick={handleSave}>
+                            保存设置
+                        </button>)}
+                    </div>
+
+                </div>
+
+            </div>
+            {isEditing && (
+                <div className="settings-section">
+                    <h4>相机设置</h4>
                     <div className="form-group">
                         <label>亮度：{settings.profile[currentProfile].imageAdjustment.iBrightness}</label>
                         <input
@@ -453,210 +784,214 @@ export default function DisplaySettings() {
                             max="100"
                             value={settings.profile[currentProfile].imageAdjustment.iBrightness}
                             onChange={(e) => handleProfileChange("imageAdjustment", "iBrightness", Number(e.target.value))}
+                            onMouseUp={() => handleSaveAdjustment(currentProfile)}
                         />
                     </div>
-                </div>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>对比度：{settings.profile[currentProfile].imageAdjustment.iContrast}</label>
-                        <input
-                            type="range"
-                            className="slider"
-                            min="0"
-                            max="100"
-                            value={settings.profile[currentProfile].imageAdjustment.iContrast}
-                            onChange={(e) => handleProfileChange("imageAdjustment", "iContrast", Number(e.target.value))}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>饱和度：{settings.profile[currentProfile].imageAdjustment.iSaturation}</label>
-                        <input
-                            type="range"
-                            className="slider"
-                            min="0"
-                            max="100"
-                            value={settings.profile[currentProfile].imageAdjustment.iSaturation}
-                            onChange={(e) => handleProfileChange("imageAdjustment", "iSaturation", Number(e.target.value))}
-                        />
-                    </div>
-                </div>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>锐度：{settings.profile[currentProfile].imageAdjustment.iSharpness}</label>
-                        <input
-                            type="range"
-                            className="slider"
-                            min="0"
-                            max="100"
-                            value={settings.profile[currentProfile].imageAdjustment.iSharpness}
-                            onChange={(e) => handleProfileChange("imageAdjustment", "iSharpness", Number(e.target.value))}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>色调：{settings.profile[currentProfile].imageAdjustment.iHue}</label>
-                        <input
-                            type="range"
-                            className="slider"
-                            min="0"
-                            max="100"
-                            value={settings.profile[currentProfile].imageAdjustment.iHue}
-                            onChange={(e) => handleProfileChange("imageAdjustment", "iHue", Number(e.target.value))}
-                        />
-                    </div>
-                </div>
-            </div>
-            <div className="settings-section">
-                <h4>相机设置</h4>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>曝光模式</label>
-                        <select
-                            className="form-control"
-                            value={settings.profile[currentProfile].exposure.sExposureMode}
-                            onChange={(e) => handleProfileChange("exposure", "sExposureMode", e.target.value)}
-                        >
-                            <option value="auto">自动</option>
-                            <option value="manual">手动</option>
-                        </select>
-                    </div>
-                    {settings.profile[currentProfile].exposure.sExposureMode === "manual" && <div className="form-group">
-                        <label>曝光时间</label>
-                        <select
-                            className="form-control"
-                            value={settings.profile[currentProfile].exposure.sExposureTime}
-                            onChange={(e) => handleProfileChange("exposure", "sExposureTime", e.target.value)}
-                        >
-                            <option value="1/2">1/2</option>
-                            <option value="1/3">1/3</option>
-                            <option value="1/4">1/4</option>
-                            <option value="1/5">1/5</option>
-                            <option value="1/6">1/6</option>
-                            <option value="1/7">1/7</option>
-                            <option value="1/8">1/8</option>
-                            <option value="1/9">1/9</option>
-                            <option value="1/10">1/10</option>
-                        </select>
-                    </div>}
-                </div>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>增益模式</label>
-                        <select
-                            className="form-control"
-                            value={settings.profile[currentProfile].exposure.sGainMode}
-                            onChange={(e) => handleProfileChange("exposure", "sGainMode", e.target.value)}
-                        >
-                            <option value="auto">自动</option>
-                            <option value="manual">手动</option>
-                        </select>
-                    </div>
-                    {settings.profile[currentProfile].exposure.sGainMode === "manual" && <div className="form-group">
-                        <label>曝光增益值：{settings.profile[currentProfile].exposure.iExposureGain}</label>
-                        <input
-                            type="range"
-                            className="slider"
-                            min="1"
-                            max="128"
-                            value={settings.profile[currentProfile].exposure.iExposureGain}
-                            onChange={(e) => handleProfileChange("exposure", "iExposureGain", Number(e.target.value))}
-                        />
-                    </div>}
-                </div>
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>背光补偿模式</label>
-                        <select
-                            className="form-control"
-                            value={currentBLC}
-                            onChange={(e) => handleBlcChange(e.target.value)}
-                        >
-                            <option value="close">关闭</option>
-                            <option value="sHLC">强光抑制(HLC)</option>
-                            <option value="sBLCRegion">背光补偿</option>
-                            <option value="sHDR">宽动态(HDR)</option>
-                        </select>
-                    </div>
-                    {currentBLC != "close" && currentBLC != "sHDR" && <div className="form-group">
-                        <label>{currentBLC}等级：{settings.profile[currentProfile].BLC[currentBLC]}</label>
-                        <input
-                            type="range"
-                            className="slider"
-                            min="0"
-                            max="10"
-                            value={settings.profile[currentProfile].BLC.iHDRLevel}
-                            onChange={(e) => handleProfileChange("BLC", "iHDRLevel", Number(e.target.value))}
-                        />
-                    </div>}
-                </div>
-
-                <div className="form-row">
-                    <div className="form-group">
-                        <label>白平衡模式</label>
-                        <select
-                            className="form-control"
-                            value={settings.profile[currentProfile].whiteBlance.sWhiteBlanceStyle}
-                            onChange={(e) => handleProfileChange("whiteBlance", "sWhiteBlanceStyle", e.target.value)}
-                        >
-                            <option value="auto">自动</option>
-                            <option value="manual">手动</option>
-                            <option value="daylight">自然光</option>
-                            <option value="streetlamp">路灯</option>
-                            <option value="outdoor">室外</option>
-                        </select>
-                    </div>
-                    {settings.profile[currentProfile].whiteBlance.sWhiteBlanceStyle === "manual" && <div className="form-group">
-                        <label>色温(K)：{settings.profile[currentProfile].whiteBlance.iWhiteBalanceCT}</label>
-                        <input
-                            type="range"
-                            className="slider"
-                            min="2800"
-                            max="7500"
-                            value={settings.profile[currentProfile].whiteBlance.iWhiteBalanceCT}
-                            onChange={(e) => handleProfileChange("whiteBlance", "iWhiteBalanceCT", Number(e.target.value))}
-                        />
-                    </div>}
-                </div>
-
-                <div className="form-group">
-                    <label>降噪模式</label>
-                    <select
-                        className="form-control"
-                        value={settings.profile[currentProfile].imageEnhancement.sNoiseReduceMode}
-                        onChange={(e) => handleProfileChange("imageEnhancement", "sNoiseReduceMode", Number(e.target.value))}
-                    >
-                        <option value={0}>关闭</option>
-                        <option value={1}>专家模式(mixnr)</option>
-                    </select>
-                    {settings.profile[currentProfile].imageEnhancement.sNoiseReduceMode === 1 && <div className="form-row">
+                    <div className="form-row">
                         <div className="form-group">
-                            <label>空域降噪：{settings.profile[currentProfile].imageEnhancement.iSpatialDenoiseLevel}</label>
+                            <label>对比度：{settings.profile[currentProfile].imageAdjustment.iContrast}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="0"
                                 max="100"
-                                value={settings.profile[currentProfile].imageEnhancement.iSpatialDenoiseLevel}
-                                onChange={(e) => handleProfileChange("imageEnhancement", "iSpatialDenoiseLevel", Number(e.target.value))}
+                                value={settings.profile[currentProfile].imageAdjustment.iContrast}
+                                onChange={(e) => handleProfileChange("imageAdjustment", "iContrast", Number(e.target.value))}
+                                onMouseUp={() => handleSaveAdjustment(currentProfile)}
                             />
                         </div>
                         <div className="form-group">
-                            <label>时域降噪：{settings.profile[currentProfile].imageEnhancement.iTemporalDenoiseLevel}</label>
+                            <label>饱和度：{settings.profile[currentProfile].imageAdjustment.iSaturation}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="0"
                                 max="100"
-                                value={settings.profile[currentProfile].imageEnhancement.iTemporalDenoiseLevel}
-                                onChange={(e) => handleProfileChange("imageEnhancement", "iTemporalDenoiseLevel", Number(e.target.value))}
+                                value={settings.profile[currentProfile].imageAdjustment.iSaturation}
+                                onChange={(e) => handleProfileChange("imageAdjustment", "iSaturation", Number(e.target.value))}
+                                onMouseUp={() => handleSaveAdjustment(currentProfile)}
                             />
                         </div>
-                    </div>}
-                </div>
-            </div>
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>锐度：{settings.profile[currentProfile].imageAdjustment.iSharpness}</label>
+                            <input
+                                type="range"
+                                className="slider"
+                                min="0"
+                                max="100"
+                                value={settings.profile[currentProfile].imageAdjustment.iSharpness}
+                                onChange={(e) => handleProfileChange("imageAdjustment", "iSharpness", Number(e.target.value))}
+                                onMouseUp={() => handleSaveAdjustment(currentProfile)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>色调：{settings.profile[currentProfile].imageAdjustment.iHue}</label>
+                            <input
+                                type="range"
+                                className="slider"
+                                min="0"
+                                max="100"
+                                value={settings.profile[currentProfile].imageAdjustment.iHue}
+                                onChange={(e) => handleProfileChange("imageAdjustment", "iHue", Number(e.target.value))}
+                                onMouseUp={() => handleSaveAdjustment(currentProfile)}
+                            />
+                        </div>
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>曝光模式</label>
+                            <select
+                                className="form-control"
+                                value={settings.profile[currentProfile].exposure.sExposureMode}
+                                onChange={(e) => handleProfileChange("exposure", "sExposureMode", e.target.value)}
+                            >
+                                <option value="auto">自动</option>
+                                <option value="manual">手动</option>
+                            </select>
+                        </div>
+                        {settings.profile[currentProfile].exposure.sExposureMode === "manual" && <div className="form-group">
+                            <label>曝光时间</label>
+                            <select
+                                className="form-control"
+                                value={settings.profile[currentProfile].exposure.sExposureTime}
+                                onChange={(e) => handleProfileChange("exposure", "sExposureTime", e.target.value)}
+
+                            >
+                                <option value="1/2">1/2</option>
+                                <option value="1/3">1/3</option>
+                                <option value="1/4">1/4</option>
+                                <option value="1/5">1/5</option>
+                                <option value="1/6">1/6</option>
+                                <option value="1/7">1/7</option>
+                                <option value="1/8">1/8</option>
+                                <option value="1/9">1/9</option>
+                                <option value="1/10">1/10</option>
+                            </select>
+                        </div>}
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>增益模式</label>
+                            <select
+                                className="form-control"
+                                value={settings.profile[currentProfile].exposure.sGainMode}
+                                onChange={(e) => handleProfileChange("exposure", "sGainMode", e.target.value)}
+                            >
+                                <option value="auto">自动</option>
+                                <option value="manual">手动</option>
+                            </select>
+                        </div>
+                        {settings.profile[currentProfile].exposure.sGainMode === "manual" && <div className="form-group">
+                            <label>曝光增益值：{settings.profile[currentProfile].exposure.iExposureGain}</label>
+                            <input
+                                type="range"
+                                className="slider"
+                                min="1"
+                                max="128"
+                                value={settings.profile[currentProfile].exposure.iExposureGain}
+                                onChange={(e) => handleProfileChange("exposure", "iExposureGain", Number(e.target.value))}
+                                onMouseUp={() => handleSaveExposure()}
+                            />
+                        </div>}
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>背光补偿模式</label>
+                            <select
+                                className="form-control"
+                                value={currentBLC}
+                                onChange={(e) => handleBlcChange(e.target.value)}
+                            >
+                                <option value="close">关闭</option>
+                                <option value="sHLC">强光抑制(HLC)</option>
+                                <option value="sBLCRegion">背光补偿</option>
+                                <option value="sHDR">宽动态(HDR)</option>
+                            </select>
+                        </div>
+                        {currentBLC != "close" && currentBLC != "sHDR" && <div className="form-group">
+                            <label>{currentBLC}等级：{settings.profile[currentProfile].BLC[BLCNAME2DISPLAY[currentBLC]]}</label>
+                            <input
+                                type="range"
+                                className="slider"
+                                min="0"
+                                max="100"
+                                value={settings.profile[currentProfile].BLC[BLCNAME2DISPLAY[currentBLC]]}
+                                onChange={(e) => handleProfileChange("BLC", BLCNAME2DISPLAY[currentBLC], Number(e.target.value))}
+                                onMouseUp={() => handleSaveBLC()}
+                            />
+                        </div>}
+                    </div>
+
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>白平衡模式</label>
+                            <select
+                                className="form-control"
+                                value={settings.profile[currentProfile].whiteBlance.sWhiteBlanceStyle}
+                                onChange={(e) => handleProfileChange("whiteBlance", "sWhiteBlanceStyle", e.target.value)}
+                            >
+                                <option value="auto">自动</option>
+                                <option value="manual">手动</option>
+                                <option value="natural">自然光</option>
+                                <option value="streetlight">路灯</option>
+                                <option value="outdoor">室外</option>
+                            </select>
+                        </div>
+                        {settings.profile[currentProfile].whiteBlance.sWhiteBlanceStyle === "manual" && <div className="form-group">
+                            <label>色温(K)：{settings.profile[currentProfile].whiteBlance.iWhiteBalanceCT}</label>
+                            <input
+                                type="range"
+                                className="slider"
+                                min="2800"
+                                max="7500"
+                                value={settings.profile[currentProfile].whiteBlance.iWhiteBalanceCT}
+                                onChange={(e) => handleProfileChange("whiteBlance", "iWhiteBalanceCT", Number(e.target.value))}
+                                onMouseUp={() => handleSaveWhiteBlance()}
+                            />
+                        </div>}
+                    </div>
+
+                    <div className="form-group">
+                        <label>降噪模式</label>
+                        <select
+                            className="form-control"
+                            value={settings.profile[currentProfile].imageEnhancement.sNoiseReduceMode}
+                            onChange={(e) => handleProfileChange("imageEnhancement", "sNoiseReduceMode", Number(e.target.value))}
+                        >
+                            <option value={0}>关闭</option>
+                            <option value={1}>专家模式(mixnr)</option>
+                        </select>
+                        {settings.profile[currentProfile].imageEnhancement.sNoiseReduceMode === 1 && <div className="form-row">
+                            <div className="form-group">
+                                <label>空域降噪：{settings.profile[currentProfile].imageEnhancement.iSpatialDenoiseLevel}</label>
+                                <input
+                                    type="range"
+                                    className="slider"
+                                    min="0"
+                                    max="100"
+                                    value={settings.profile[currentProfile].imageEnhancement.iSpatialDenoiseLevel}
+                                    onChange={(e) => handleProfileChange("imageEnhancement", "iSpatialDenoiseLevel", Number(e.target.value))}
+                                    onMouseUp={() => handleSaveImageEnhancement()}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>时域降噪：{settings.profile[currentProfile].imageEnhancement.iTemporalDenoiseLevel}</label>
+                                <input
+                                    type="range"
+                                    className="slider"
+                                    min="0"
+                                    max="100"
+                                    value={settings.profile[currentProfile].imageEnhancement.iTemporalDenoiseLevel}
+                                    onChange={(e) => handleProfileChange("imageEnhancement", "iTemporalDenoiseLevel", Number(e.target.value))}
+                                    onMouseUp={() => handleSaveImageEnhancement()}
+                                />
+                            </div>
+                        </div>}
+                    </div>
+                </div>)}
             <div className="button-group">
-                <button className="btn btn-primary" onClick={handleSave}>
-                    保存设置
-                </button>
                 <button className="btn btn-secondary" onClick={handleReset}>
                     恢复默认
                 </button>

@@ -48,7 +48,7 @@ def set_image_config(cam_id: int, payload: ImageConfig, _: str = Depends(require
 @router.put("/image/{cam_id}/scene")
 def set_image_scene(cam_id: int, payload: ImageSceneRequest, _: str = Depends(require_auth)):
     config = _get_image(cam_id)
-    config["nightToDay"]["iProfileCur"] = payload.iProfileCur
+    config["nightToDay"]["iProfile"] = payload.iProfile
     return {"status": 1, "message": "Scene updated"}
 
 
@@ -59,8 +59,8 @@ def set_video_adjustment(cam_id: int, payload: ImageVideoAdjustmentRequest, _: s
     return ImageConfig(**config)
 
 
-@router.put("/image/{cam_id}/{scene_id}/night-to-day", response_model=ImageConfig)
-def set_night_to_day(cam_id: int, scene_id: int, payload: ImageNightToDayRequest, _: str = Depends(require_auth)) -> ImageConfig:
+@router.put("/image/{cam_id}/night-to-day", response_model=ImageConfig)
+def set_night_to_day(cam_id: int, payload: ImageNightToDayRequest, _: str = Depends(require_auth)) -> ImageConfig:
     config = _get_image(cam_id)
     config["nightToDay"] = payload.model_dump()
     return ImageConfig(**config)

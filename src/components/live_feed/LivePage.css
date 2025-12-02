@@ -2,21 +2,21 @@
 .live-page-container {
   max-width: 1800px;
   margin: 0 auto;
-  padding: 20px;
+  padding: 4px;
   background: #ffffff;
   min-height: 100vh;
 }
 
 .live-page-header {
-  margin-bottom: 30px;
+  margin-bottom: 6px;
   border-bottom: 2px solid #e2e8f0;
-  padding-bottom: 20px;
+  padding-bottom: 6px;
 }
 
 .live-page-header h2 {
   font-size: 32px;
   color: #1e293b;
-  margin: 0 0 8px 0;
+  margin: 0 0 0px 0;
   font-weight: 700;
 }
 
@@ -229,7 +229,7 @@
   flex-wrap: wrap;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   border-bottom: 2px solid #e2e8f0;
-  padding: 12px 12px 0 12px;
+  padding: 2px 2px 0 2px;
   gap: 6px;
   flex-shrink: 0;
 }
@@ -275,7 +275,7 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px;
+  padding: 10px;
   background: #ffffff;
   min-height: 0;
   /* 重要：允许flex子元素滚动 */
@@ -337,7 +337,7 @@
   font-size: 16px;
   font-weight: 700;
   color: #1e293b;
-  margin: 0 0 16px 0;
+  margin: 0 0 6px 0;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -588,6 +588,21 @@ input[type="range"].slider:not(.form-control) {
   opacity: 0.6;
   cursor: not-allowed;
 }
+.btn-custom {
+  background: linear-gradient(135deg, #2ba650 0%, #0bac53 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-custom:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2ba650 0%, #0bac53 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.btn-custom:active:not(:disabled) {
+  transform: translateY(0);
+}
 
 .btn-primary {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
@@ -605,8 +620,8 @@ input[type="range"].slider:not(.form-control) {
 }
 
 .btn-secondary {
-  background: #f1f5f9;
-  color: #475569;
+  background: #ede906;
+  color: #030303;
   border: 2px solid #e2e8f0;
 }
 
