@@ -3,7 +3,7 @@ import { useApp } from '../contexts/AppContext';
 import './Sidebar.css';
 
 const Sidebar = ({ activeTab, onTabChange }) => {
-  const { t } = useApp();
+  const { t, language, theme, toggleLanguage, toggleTheme, username, logout } = useApp();
   
   const menuItems = [
     { id: 'device-info', labelKey: 'sidebar.deviceInfo', icon: '📱' },
@@ -15,6 +15,17 @@ const Sidebar = ({ activeTab, onTabChange }) => {
 
   return (
     <div className="sidebar">
+      {/* 顶部品牌标题 */}
+      <div className="sidebar-header">
+        <div className="sidebar-logo">
+          <span className="logo-icon">📷</span>
+          <div className="logo-text">
+            <h1 className="logo-title">ReCamera</h1>
+            <span className="logo-version">V2</span>
+          </div>
+        </div>
+      </div>
+
       <nav className="sidebar-nav">
         {menuItems.map(item => (
           <button
@@ -27,6 +38,49 @@ const Sidebar = ({ activeTab, onTabChange }) => {
           </button>
         ))}
       </nav>
+
+      {/* 底部控件区域 */}
+      <div className="sidebar-controls">
+        {/* 用户信息 */}
+        {username && (
+          <div className="sidebar-control-item user-info">
+            <span className="sidebar-control-icon">👤</span>
+            <span className="sidebar-control-text">{username}</span>
+          </div>
+        )}
+
+        {/* 语言切换 */}
+        <button 
+          className="sidebar-control-button"
+          onClick={toggleLanguage}
+          title={language === 'zh' ? 'Switch to English' : '切换到中文'}
+        >
+          <span className="sidebar-control-icon">🌐</span>
+          <span className="sidebar-control-text">{language === 'zh' ? '中文' : 'EN'}</span>
+        </button>
+
+        {/* 主题切换 */}
+        <button 
+          className="sidebar-control-button"
+          onClick={toggleTheme}
+          title={theme === 'light' ? t('common.dark') : t('common.light')}
+        >
+          <span className="sidebar-control-icon">{theme === 'light' ? '🌙' : '☀️'}</span>
+          <span className="sidebar-control-text">
+            {theme === 'light' ? t('common.light') : t('common.dark')}
+          </span>
+        </button>
+
+        {/* 登出按钮 */}
+        <button 
+          className="sidebar-control-button logout-button"
+          onClick={logout}
+          title="登出"
+        >
+          <span className="sidebar-control-icon">🚪</span>
+          <span className="sidebar-control-text">登出</span>
+        </button>
+      </div>
     </div>
   );
 };

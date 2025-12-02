@@ -2,19 +2,72 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .app-container {
   display: flex;
   flex: 1;
+  height: 100vh;
   overflow: hidden;
 }
 
 .content-area {
   flex: 1;
-  padding: 30px;
+  padding: 24px;
   overflow-y: auto;
-  background-color: var(--bg-primary);
-  transition: background-color 0.3s ease;
+  background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
+  transition: all 0.3s ease;
+  margin-left: 250px;
+  position: relative;
+}
+
+/* 暗色主题的内容区域 */
+body[data-theme="dark"] .content-area {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+/* 美化滚动条 */
+.content-area::-webkit-scrollbar {
+  width: 10px;
+}
+
+.content-area::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.content-area::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  border-radius: 10px;
+  transition: background 0.3s ease;
+}
+
+.content-area::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #5568d3 0%, #6a3f8e 100%);
+}
+
+/* 为内容添加微妙的动画效果 */
+.content-area > * {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .content-area {
+    margin-left: 200px;
+    padding: 16px;
+  }
 }
 

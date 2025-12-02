@@ -1,41 +1,145 @@
 .sidebar {
   width: 250px;
-  background-color: var(--sidebar-bg);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   color: var(--sidebar-text);
-  box-shadow: 2px 0 8px var(--card-shadow);
-  overflow-y: auto;
-  transition: background-color 0.3s ease;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+/* 顶部品牌标题区域 */
+.sidebar-header {
+  padding: 24px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  font-size: 32px;
+  filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.3));
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.logo-title {
+  font-size: 20px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.logo-version {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  padding: 20px 0;
+  padding: 12px 0;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* 美化滚动条 */
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .sidebar-item {
   display: flex;
   align-items: center;
-  padding: 16px 24px;
+  padding: 14px 20px;
+  margin: 4px 12px;
   background: none;
   border: none;
-  color: var(--sidebar-text);
+  color: #cbd5e1;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
-  font-size: 16px;
-  border-left: 4px solid transparent;
+  font-size: 15px;
+  border-radius: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #3b82f6 0%, #8b5cf6 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .sidebar-item:hover {
-  background-color: var(--sidebar-hover);
-  border-left-color: var(--sidebar-active);
+  background: rgba(59, 130, 246, 0.15);
+  color: #e0e7ff;
+  transform: translateX(4px);
+}
+
+.sidebar-item:hover::before {
+  opacity: 1;
 }
 
 .sidebar-item.active {
-  background-color: var(--sidebar-hover);
-  border-left-color: var(--sidebar-active);
-  color: var(--sidebar-active);
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(139, 92, 246, 0.1) 100%);
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.sidebar-item.active::before {
+  opacity: 1;
 }
 
 .sidebar-icon {
@@ -43,9 +147,189 @@
   margin-right: 12px;
   min-width: 24px;
   text-align: center;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-item:hover .sidebar-icon {
+  transform: scale(1.15);
 }
 
 .sidebar-label {
   font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+/* 底部控件区域 */
+.sidebar-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin-top: auto;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.2) 100%);
+}
+
+.sidebar-control-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+  border-radius: 8px;
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  color: #e0e7ff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-control-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #cbd5e1;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-align: left;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-control-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.sidebar-control-button:hover::before {
+  left: 100%;
+}
+
+.sidebar-control-button:hover {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(96, 165, 250, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.sidebar-control-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+}
+
+.sidebar-control-icon {
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  min-width: 24px;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-control-button:hover .sidebar-control-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.sidebar-control-text {
+  font-size: 13px;
+  flex: 1;
+  letter-spacing: 0.3px;
+}
+
+/* 用户信息样式 */
+.user-info {
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.15) 0%, rgba(16, 185, 129, 0.1) 100%);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.user-info .sidebar-control-text {
+  font-weight: 600;
+  color: #a7f3d0;
+}
+
+.user-info .sidebar-control-icon {
+  filter: drop-shadow(0 0 4px rgba(52, 211, 153, 0.5));
+}
+
+/* 登出按钮样式 */
+.logout-button {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  color: #fca5a5;
+}
+
+.logout-button:hover {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.2) 100%);
+  border-color: rgba(248, 113, 113, 0.5);
+  color: #fecaca;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.logout-button:hover .sidebar-control-icon {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .sidebar-header {
+    padding: 20px 16px;
+  }
+
+  .logo-icon {
+    font-size: 28px;
+  }
+
+  .logo-title {
+    font-size: 18px;
+  }
+
+  .logo-version {
+    font-size: 10px;
+  }
+
+  .sidebar-item {
+    padding: 12px 16px;
+    margin: 3px 10px;
+    font-size: 14px;
+  }
+
+  .sidebar-icon {
+    font-size: 18px;
+    margin-right: 10px;
+  }
+  
+  .sidebar-controls {
+    padding: 16px 12px;
+    gap: 8px;
+  }
+  
+  .sidebar-control-button,
+  .sidebar-control-item {
+    padding: 9px 11px;
+  }
+
+  .sidebar-control-icon {
+    font-size: 16px;
+    min-width: 20px;
+  }
+  
+  .sidebar-control-text {
+    font-size: 12px;
+  }
 }
 

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
 import Sidebar from './components/Sidebar';
-import Header from './components/Header';
 import DeviceInfo from './pages/DeviceInfo';
 import LiveView from './pages/LiveView';
 import RecordSettings from './pages/RecordSettings';
@@ -41,7 +40,6 @@ function App() {
   return (
     <ToastProvider>
       <div className="app">
-        <Header />
         <div className="app-container">
           <Sidebar activeTab={activeTab} onTabChange={setActiveTab} />
           <div className="content-area">
