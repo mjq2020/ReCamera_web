@@ -22,7 +22,7 @@ from ..utils import current_timestamp_payload, random_status
 router = APIRouter(prefix="/cgi-bin/entry.cgi", tags=["system"])
 
 
-@router.post("/system/system/login", response_model=LoginResponse)
+@router.post("/system/login", response_model=LoginResponse)
 def login(payload: LoginRequest, response: Response) -> LoginResponse:
     password_hash = state.passwords.get(payload.sUserName)
     # if password_hash is None or password_hash.lower() != payload.sPassword.lower():

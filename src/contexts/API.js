@@ -196,7 +196,7 @@ class VideoAPI {
         return axiosInstance.get(urls.imageAll)
     }
 
-    // 配置当前画面所有参数（恢复默认值）
+    // 配置当前画面所有参数（恢复默认值）f
     static postImageAll(data) {
         return axiosInstance.post(urls.imageAll, data)
     }
@@ -214,6 +214,11 @@ class VideoAPI {
     // 切换场景（进入/退出指定场景配置模式）
     static putScene(data) {
         return axiosInstance.put(urls.imageScene, data)
+    }
+
+    // 保存场景配置
+    static postSceneSave() {
+        return axiosInstance.post(urls.imageSceneSave)
     }
 
     // 图像基础调节（亮度、对比度、饱和度、锐度、色调）
@@ -250,7 +255,40 @@ class VideoAPI {
 
 class RecordAPI {
 
+    // 获取录制规则配置
+    static getRecordRuleConfig() {
+        return axiosInstance.get(urls.recordRecordRuleConfig)
+    }
 
+    // 设置录制规则配置
+    static setRecordRuleConfig(data) {
+        return axiosInstance.post(urls.recordRecordRuleConfig, data)
+    }
+
+    // 获取计划规则配置
+    static getScheduleRuleConfig() {
+        return axiosInstance.get(urls.recordScheduleConfig)
+    }
+
+    // 设置计划规则配置
+    static setScheduleRuleConfig(data) {
+        return axiosInstance.post(urls.recordScheduleConfig, data)
+    }
+
+    // 获取全局规则配置
+    static getRuleConfig() {
+        return axiosInstance.get(urls.recordConfig)
+    }
+
+    // 设置全局规则配置
+    static setRuleConfig(data) {
+        return axiosInstance.post(urls.recordConfig, data)
+    }
+
+    // 获取存储配置
+    static getStorageConfig() {
+        return axiosInstance.get(urls.recordStorageConfig)
+    }
 }
 
 class InferenceAPI {

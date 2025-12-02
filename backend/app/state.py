@@ -284,7 +284,7 @@ class BackendState:
                     "iDawnTime": 28800,
                     "iDuskTime": 64800,
                     "iProfileSelect": 0,
-                    "iProfileCur": 0,
+                    "iProfile": 0,
                 },
                 "profile": [
                     {
@@ -325,36 +325,71 @@ class BackendState:
             }
         }
     )
-    record_control: Dict[str, object] = field(
+    # 1. 全局规则配置
+    rule_config: Dict[str, object] = field(
         default_factory=lambda: {
-            "sRecordCondition": "time",
-            "sRecordType": "video",
-            "iRecordTime": 60,
-            "sRecordFormat": "jpg",
-            "sTriggerMethod": "io",
-            "iAntiShake": 5,
-            "sIoPin": "gpio1",
-            "sTriggerLevel": "height",
-            "sTriggerComand": "record",
-            "iPfTrigger": 7,
-            "sTriggerMask": "base64adf",
-            "lCondition": [
-                {"sName": "条件名", "iFrmae": 5, "lLabel": ["person", "bus", "moto"]}
-            ],
-            "sCurrentModel": "YOLOv5",
-            "sModelType": "det",
+            "bRuleEnabled": True,
+            "dWriterConfig": {
+                "sFormat": "mp4",
+                "iIntervalMs": 0
+            }
         }
     )
-    record_schedule: Dict[str, List[Dict]] = field(
-        default_factory=lambda: {day: [] for day in [
-            "lMonday",
-            "lTuesday",
-            "lWednesday",
-            "lThursday",
-            "lFriday",
-            "lSaturday",
-            "lSunday",
-        ]}
+    # 2. 计划规则配置
+    schedule_rule_config: List[Dict] = field(
+        default_factory=lambda: [
+            {
+                "dStart": {
+                    "iDay": 1,
+                    "iHour": 9,
+                    "iMinute": 0,
+                    "iSecond": 0
+                },
+                "dEnd": {
+                    "iDay": 1,
+                    "iHour": 18,
+                    "iMinute": 0,
+                    "iSecond": 0
+                }
+            }
+        ]
+    )
+    # 3. 录制规则配置
+    record_rule_config: Dict[str, object] = field(
+        default_factory=lambda: {
+            "sType": "lInferenceSet",
+            "lInferenceSet": [
+                {
+                    "sID": "person_detection",
+                    "iDebounceTimes": 3,
+                    "lConfidenceFilter": [0.5, 1.0],
+                    "lClassFilter": [0, 1],
+                    "lRegionFilter": [
+                        {
+                            "lPolygon": [
+                                [0.0, 0.0],
+                                [0.5, 0.0],
+                                [0.5, 0.5],
+                                [0.0, 0.5]
+                            ]
+                        }
+                    ]
+                }
+            ],
+            "dTimer": {
+                "iIntervalSeconds": 60
+            },
+            "dGPIO": {
+                "sName": "GPIO_01",
+                "sInitialLevel": "low",
+                "sSignal": "high",
+                "iDebounceDurationMs": 100
+            },
+            "dTTY": {
+                "sName": "ttyS0",
+                "sCommand": "RECORD"
+            }
+        }
     )
     models: List[Dict] = field(
         default_factory=lambda: [
@@ -396,6 +431,67 @@ class BackendState:
                 "sUser": "name",
                 "sPassword": secrets.token_hex(8),
             },
+        }
+    )
+    # 4. 存储配置
+    storage_config: Dict[str, str] = field(
+        default_factory=lambda: {
+            "sEnabledSlotName": "/dev/sda1"
+        }
+    )
+    # 5. 存储状态
+    storage_status: Dict[str, object] = field(
+        default_factory=lambda: {
+            "iRevision": 1,
+            "dSlots": [
+                {
+                    "sDevPath": "/dev/sda1",
+                    "sMountPath": "/mnt/sda1",
+                    "bRemovable": True,
+                    "bInternal": False,
+                    "sLabel": "MyDrive",
+                    "sUUID": "550e8400-e29b-41d4-a716-446655440000",
+                    "sType": "ext4",
+                    "bEnabled": True,
+                    "bWriting": False,
+                    "eState": 8,
+                    "sState": "Ready",
+                    "iStatsSizeBytes": 1000000000,
+                    "iStatsFreeBytes": 500000000,
+                    "iQuotaLimitBytes": 100000000,
+                    "iQuotaUsedBytes": 10000000,
+                    "bQuotaRotate": True,
+                    "dRelayStatus": {
+                        "iRelayTimeoutRemain": 0,
+                        "iRelayTimeout": 30,
+                        "sRelayDirectory": ""
+                    }
+                },
+                {
+                    "sDevPath": "/dev/mmcblk0p1",
+                    "sMountPath": "/mnt/internal",
+                    "bRemovable": False,
+                    "bInternal": True,
+                    "sLabel": "Internal",
+                    "sUUID": "660e8400-e29b-41d4-a716-446655440001",
+                    "sType": "ext4",
+                    "bEnabled": False,
+                    "bWriting": False,
+                    "eState": 5,
+                    "sState": "Mounted",
+                    "iStatsSizeBytes": 8000000000,
+                    "iStatsFreeBytes": 3000000000,
+                    "iQuotaLimitBytes": 500000000,
+                    "iQuotaUsedBytes": 50000000,
+                    "bQuotaRotate": False,
+                    "dRelayStatus": {
+                        "iRelayTimeoutRemain": 0,
+                        "iRelayTimeout": 30,
+                        "sRelayDirectory": ""
+                    }
+                }
+            ],
+            "sDataDirName": "DCIM"
         }
     )
 

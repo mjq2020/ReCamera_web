@@ -1,6 +1,6 @@
 export const urls = {
     // base info
-    systemLogin: '/system/system/login',
+    systemLogin: '/system/login',
     systemInfo: '/system/device-info',
     systemTime: "/system/time",
     systemResourceInfo: "/system/resource-info",
@@ -23,18 +23,18 @@ export const urls = {
     configUpload: "/config/upload",
 
     // log and Terminal
-    wsTerminal:"/ws/system/terminal",
-    wsLogs:"/ws/system/wslogs",
+    wsTerminal: "/ws/system/terminal",
+    wsLogs: "/ws/system/wslogs",
 
     // AI inference
-    modelList:"/model/list",
-    modelUpload:"/model/upload",
-    modelDelete:"/model/delete",
-    modelInfo:"/model/info",
-    modelAlgo:"/model/algorithm",
-    modelInference:"/model/inference",
-    wsInferenceResults:"/ws/inference/results",
-    nofifyConfig:"/notify/cfg",
+    modelList: "/model/list",
+    modelUpload: "/model/upload",
+    modelDelete: "/model/delete",
+    modelInfo: "/model/info",
+    modelAlgo: "/model/algorithm",
+    modelInference: "/model/inference",
+    wsInferenceResults: "/ws/inference/results",
+    nofifyConfig: "/notify/cfg",
 
     // Live Settings - Video
     videoEncode: (streamId) => `/video/${streamId}/encode`,
@@ -51,11 +51,20 @@ export const urls = {
     imageVideoAdjustment: "/image/0/video-adjustment",
     imageNightToDay: "/image/0/night-to-day",
     imageScene: "/image/0/scene",
+    imageSceneSave: "/image/0/scene-save",
     imageAdjustment: (sceneId) => `/image/0/${sceneId}/adjustment`,
     imageExposure: (sceneId) => `/image/0/${sceneId}/exposure`,
     imageWhiteBlance: (sceneId) => `/image/0/${sceneId}/white-blance`,
     imageBLC: (sceneId) => `/image/0/${sceneId}/blc`,
     imageEnhancement: (sceneId) => `/image/0/${sceneId}/enhancement`,
     imageAF: (sceneId) => `/image/0/${sceneId}/af`,
+
+    // record
+    recordConfig: "/vigil/rule/config",
+    recordScheduleConfig: "/vigil/rule/schedule-rule-config",
+    recordRecordRuleConfig: "/vigil/rule/record-rule-config",
+    recordStorageConfig: "/vigil/storage/config",
+    recordStorageStatus: "/vigil/storage/status",
+    recordStorageControl: "/vigil/storage/control",
 
 };

@@ -80,8 +80,8 @@ function TimeSetting() {
         setSelectedMethod(event.target.value)
 
         if (event.target.value === "ntp") {
-            const address = originTime?.dNtpConfig.sAddress || "pool.ntp.org"
-            const port = originTime?.dNtpConfig.sPort || "123"
+            const address = originTime?.dNtpConfig?.sAddress || "pool.ntp.org"
+            const port = originTime?.dNtpConfig?.sPort || "123"
             setCurrentTime({ sMethod: "ntp", dNtpConfig: { sAddress: address, sPort: port } })
         } else {
             const timestamp = originTime?.iTimestamp || new Date().getTime()
