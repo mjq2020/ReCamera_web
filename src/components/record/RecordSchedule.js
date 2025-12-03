@@ -100,9 +100,9 @@ const RecordSchedule = () => {
         // 扩展现有时间段的结束时间
         newSchedules[i].dEnd = {
           iDay: day,
-          iHour: Math.floor(endMinutes / 60),
-          iMinute: endMinutes % 60,
-          iSecond: 0
+          iHour: (Math.floor(endMinutes / 60) == 24) ? 23 : Math.floor(endMinutes / 60),
+          iMinute: (Math.floor(endMinutes / 60) == 24) ? 59 : endMinutes % 60,
+          iSecond: (Math.floor(endMinutes / 60) == 24) ? 59 : 0
         };
         merged = true;
         break;
@@ -130,9 +130,9 @@ const RecordSchedule = () => {
         },
         dEnd: {
           iDay: day,
-          iHour: Math.floor(endMinutes / 60),
-          iMinute: endMinutes % 60,
-          iSecond: 0
+          iHour: (Math.floor(endMinutes / 60) == 24) ? 23 : Math.floor(endMinutes / 60),
+          iMinute: (Math.floor(endMinutes / 60) == 24) ? 59 : endMinutes % 60,
+          iSecond: (Math.floor(endMinutes / 60) == 24) ? 59 : 0
         }
       });
     }
