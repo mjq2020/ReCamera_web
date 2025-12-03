@@ -71,6 +71,7 @@
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -120,7 +121,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  
+
 }
 
 .form-group label {
@@ -223,6 +224,7 @@
 .btn-small {
   padding: 6px 12px;
   font-size: 13px;
+
 }
 
 .btn-small.active {
@@ -291,11 +293,11 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
   background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
 }
 
-.toggle-switch input:checked + .toggle-slider::before {
+.toggle-switch input:checked+.toggle-slider::before {
   transform: translateX(24px);
 }
 
@@ -462,7 +464,8 @@
 .time-axis {
   display: flex;
   flex: 1;
-  min-width: 1152px; /* 24小时 * 48px */
+  min-width: 1152px;
+  /* 24小时 * 48px */
 }
 
 .hour-label {
@@ -939,6 +942,7 @@
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1216,8 +1220,10 @@
   gap: 16px;
   flex: 1;
   margin: 0 24px;
-  min-width: 0; /* 允许收缩 */
-  overflow: hidden; /* 防止溢出 */
+  min-width: 0;
+  /* 允许收缩 */
+  overflow: hidden;
+  /* 防止溢出 */
 }
 
 .header-middle .global-config-form {
@@ -1225,7 +1231,8 @@
   flex-direction: row;
   gap: 16px;
   width: 100%;
-  min-width: 0; /* 允许收缩 */
+  min-width: 0;
+  /* 允许收缩 */
 }
 
 .header-middle .global-config-form .form-group {
@@ -1234,7 +1241,8 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  min-width: 0; /* 允许收缩 */
+  min-width: 0;
+  /* 允许收缩 */
 }
 
 .header-middle .global-config-form label {
@@ -1243,14 +1251,17 @@
   color: #475569;
   white-space: nowrap;
   margin: 0;
-  flex-shrink: 0; /* 标签不收缩 */
+  flex-shrink: 0;
+  /* 标签不收缩 */
 }
 
 .header-middle .global-config-form .select-input,
 .header-middle .global-config-form .input-field {
   width: auto;
-  min-width: 80px; /* 减小最小宽度 */
-  max-width: 150px; /* 添加最大宽度 */
+  min-width: 80px;
+  /* 减小最小宽度 */
+  max-width: 150px;
+  /* 添加最大宽度 */
   padding: 8px 12px;
   border: 2px solid #e2e8f0;
   border-radius: 6px;
@@ -1268,15 +1279,18 @@
 
 .header-middle .global-config-form .input-field {
   width: 90px;
-  min-width: 70px; /* 数字输入框可以更小 */
+  min-width: 70px;
+  /* 数字输入框可以更小 */
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 20px;
-  flex-shrink: 0; /* 防止右侧被压缩 */
-  min-width: fit-content; /* 确保有足够空间 */
+  flex-shrink: 0;
+  /* 防止右侧被压缩 */
+  min-width: fit-content;
+  /* 确保有足够空间 */
 }
 
 /* 响应式优化：中等屏幕时缩小尺寸 */
@@ -1285,19 +1299,19 @@
     margin: 0 16px;
     gap: 12px;
   }
-  
+
   .header-middle .global-config-form {
     gap: 12px;
   }
-  
+
   .header-middle .global-config-form .form-group {
     gap: 6px;
   }
-  
+
   .header-middle .global-config-form label {
     font-size: 12px;
   }
-  
+
   .header-middle .global-config-form .select-input,
   .header-middle .global-config-form .input-field {
     padding: 6px 10px;
@@ -1305,7 +1319,7 @@
     min-width: 70px;
     max-width: 120px;
   }
-  
+
   .header-middle .global-config-form .input-field {
     width: 80px;
     min-width: 60px;
@@ -1318,18 +1332,18 @@
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .header-middle .global-config-form .form-group {
     width: 100%;
   }
-  
+
   .header-middle .global-config-form .select-input,
   .header-middle .global-config-form .input-field {
     flex: 1;
     min-width: 100px;
     max-width: none;
   }
-  
+
   .header-middle .global-config-form .input-field {
     width: auto;
   }
@@ -1341,28 +1355,31 @@
     flex-wrap: wrap;
     gap: 12px;
   }
-  
+
   .card-header h3 {
     flex: 1;
     min-width: 120px;
   }
-  
+
   .header-middle {
-    order: 3; /* 移到最后 */
-    flex-basis: 100%; /* 占满整行 */
+    order: 3;
+    /* 移到最后 */
+    flex-basis: 100%;
+    /* 占满整行 */
     margin: 12px 0 0 0;
     padding-top: 12px;
     border-top: 1px solid #e2e8f0;
   }
-  
+
   .header-middle .global-config-form {
-    flex-direction: row; /* 下一行时恢复水平排列 */
+    flex-direction: row;
+    /* 下一行时恢复水平排列 */
   }
-  
+
   .header-middle .global-config-form .form-group {
     flex: 1;
   }
-  
+
   .header-right {
     gap: 16px;
     flex-shrink: 0;
@@ -1374,15 +1391,15 @@
   .header-middle .global-config-form {
     flex-direction: column;
   }
-  
+
   .card-header h3 {
     font-size: 16px;
   }
-  
+
   .header-middle .global-config-form label {
     font-size: 11px;
   }
-  
+
   .header-middle .global-config-form .select-input,
   .header-middle .global-config-form .input-field {
     font-size: 11px;
@@ -1433,4 +1450,3 @@
 .modal-content.large {
   max-width: 900px;
 }
-

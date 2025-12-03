@@ -85,6 +85,15 @@ const RecordConfig = () => {
     }
   }, []);
 
+  // 修改全局配置
+  const saveGlobalConfig = (field, value) => {
+    const newConfig = {
+      ...globalConfig,
+      dWriterConfig: { ...globalConfig.dWriterConfig, [field]: value }
+    };
+    setGlobalConfig(newConfig);
+  };
+
   useEffect(() => {
     fetchConfigs();
   }, [fetchConfigs]);
@@ -169,18 +178,7 @@ const RecordConfig = () => {
                   <select
                     className="select-input"
                     value={globalConfig.dWriterConfig.sFormat}
-                    onChange={(e) => {
-                      const newConfig = {
-                        ...globalConfig,
-                        dWriterConfig: { ...globalConfig.dWriterConfig, sFormat: e.target.value }
-                      };
-                      RecordAPI.setRuleConfig(newConfig)
-                        .then(() => {
-                          setGlobalConfig(newConfig);
-                          toast.success('录制格式已更新');
-                        })
-                        .catch(error => toast.error('更新失败: ' + error.message));
-                    }}
+                    onChange={(e) => saveGlobalConfig('sFormat', e.target.value)}
                   >
                     <option value="mp4">MP4 (视频)</option>
                     <option value="jpg">JPG (图片)</option>
@@ -193,18 +191,7 @@ const RecordConfig = () => {
                     type="number"
                     className="input-field"
                     value={globalConfig.dWriterConfig.iIntervalMs}
-                    onChange={(e) => {
-                      const newConfig = {
-                        ...globalConfig,
-                        dWriterConfig: { ...globalConfig.dWriterConfig, iIntervalMs: parseInt(e.target.value) || 0 }
-                      };
-                      RecordAPI.setRuleConfig(newConfig)
-                        .then(() => {
-                          setGlobalConfig(newConfig);
-                          toast.success('最小捕获间隔已更新');
-                        })
-                        .catch(error => toast.error('更新失败: ' + error.message));
-                    }}
+                    onChange={(e) => saveGlobalConfig('iIntervalMs', parseInt(e.target.value) || 0)}
                   />
                 </div>
               </div>
@@ -281,7 +268,7 @@ const RecordConfig = () => {
               {/* 触发类型特定配置 */}
               <div className="config-section">
 
-                <h4>触发类型配置</h4>
+                {/* <h4>触发类型配置</h4> */}
 
                 {/* 定时触发配置 */}
                 {currentTriggerType === 'dTimer' && (
