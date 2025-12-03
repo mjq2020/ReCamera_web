@@ -1,6 +1,20 @@
 import React from "react";
+import { toast } from "../../base/Toast";
 
 const GpioConfig = ({ tempRuleConfig, setTempRuleConfig }) => {
+
+    const handleChange = (field, value) => {
+        const intValue = parseInt(value);
+        if (intValue < 0 || intValue > 1000) {
+            toast.error("去抖时长不能小于0或大于1000毫秒");
+            return;
+        }
+        setTempRuleConfig({
+            ...tempRuleConfig,
+            dGPIO: { ...tempRuleConfig.dGPIO, [field]: intValue }
+        });
+    };
+
     return (
         <div className="form-grid">
             <div className="form-group">
@@ -9,10 +23,7 @@ const GpioConfig = ({ tempRuleConfig, setTempRuleConfig }) => {
                     type="text"
                     className="input-field"
                     value={tempRuleConfig.dGPIO?.sName}
-                    onChange={(e) => setTempRuleConfig({
-                        ...tempRuleConfig,
-                        dGPIO: { ...tempRuleConfig.dGPIO, sName: e.target.value }
-                    })}
+                    readOnly
                 />
             </div>
             <div className="form-group">
@@ -51,10 +62,9 @@ const GpioConfig = ({ tempRuleConfig, setTempRuleConfig }) => {
                     type="number"
                     className="input-field"
                     value={tempRuleConfig.dGPIO?.iDebounceDurationMs}
-                    onChange={(e) => setTempRuleConfig({
-                        ...tempRuleConfig,
-                        dGPIO: { ...tempRuleConfig.dGPIO, iDebounceDurationMs: parseInt(e.target.value) }
-                    })}
+                    max={1000}
+                    min={0}
+                    onChange={(e) => handleChange('iDebounceDurationMs', e.target.value)}
                 />
             </div>
         </div>

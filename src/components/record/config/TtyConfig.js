@@ -9,10 +9,7 @@ const TtyConfig = ({ tempRuleConfig, setTempRuleConfig }) => {
                     type="text"
                     className="input-field"
                     value={tempRuleConfig.dTTY.sName}
-                    onChange={(e) => setTempRuleConfig({
-                        ...tempRuleConfig,
-                        dTTY: { ...tempRuleConfig.dTTY, sName: e.target.value }
-                    })}
+                    readOnly
                 />
             </div>
             <div className="form-group">
