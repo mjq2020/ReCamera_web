@@ -4,8 +4,11 @@
   "description": "AI摄像头配置前端应用",
   "private": true,
   "dependencies": {
+    "@xterm/addon-canvas": "^0.7.0",
     "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-unicode11": "^0.8.0",
     "@xterm/addon-web-links": "^0.11.0",
+    "@xterm/addon-webgl": "^0.18.0",
     "@xterm/xterm": "^5.5.0",
     "axios": "^1.12.2",
     "crypto-js": "^4.2.0",
