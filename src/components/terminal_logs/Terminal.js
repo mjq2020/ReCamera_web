@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
+import { Unicode11Addon } from '@xterm/addon-unicode11';
+import { WebglAddon } from '@xterm/addon-webgl';
 import '@xterm/xterm/css/xterm.css';
 import './Terminal.css';
 
@@ -49,7 +51,7 @@ const XtermTtydClient = () => {
   const [enterReconnect, setEnterReconnect] = useState(true);
 
   // ttyd WebSocket 地址
-  const TTYD_URL = 'ws://192.168.1.66:5556/ws';
+  const TTYD_URL = 'ws://192.168.1.66:7681/ws';
 
   // 写入数据到终端（带流量控制）
   const writeData = useCallback((data) => {
@@ -298,51 +300,66 @@ const XtermTtydClient = () => {
 
     console.log('[ttyd] Initializing terminal...');
 
-    // 创建 xterm.js 实例
+    // 创建 xterm.js 实例（配置参考官方 ttyd demo）
     const term = new Terminal({
       cursorBlink: true,
-      fontSize: 14,
-      fontFamily: 'Consolas, "Courier New", monospace',
+      fontSize: 13,
+      fontFamily: 'Consolas,Liberation Mono,Menlo,Courier,monospace',
+      allowProposedApi: true,  // 允许使用 Unicode11Addon 等实验性 API
       theme: {
-        background: '#1e1e1e',
-        foreground: '#ffffff',
-        cursor: '#ffffff',
+        foreground: '#d2d2d2',
+        background: '#2b2b2b',
+        cursor: '#adadad',
         black: '#000000',
-        red: '#e06c75',
-        green: '#98c379',
-        yellow: '#d19a66',
-        blue: '#61afef',
-        magenta: '#c678dd',
-        cyan: '#56b6c2',
-        white: '#abb2bf',
-        brightBlack: '#5c6370',
-        brightRed: '#e06c75',
-        brightGreen: '#98c379',
-        brightYellow: '#d19a66',
-        brightBlue: '#61afef',
-        brightMagenta: '#c678dd',
-        brightCyan: '#56b6c2',
-        brightWhite: '#ffffff'
+        red: '#d81e00',
+        green: '#5ea702',
+        yellow: '#cfae00',
+        blue: '#427ab3',
+        magenta: '#89658e',
+        cyan: '#00a7aa',
+        white: '#dbded8',
+        brightBlack: '#686a66',
+        brightRed: '#f54235',
+        brightGreen: '#99e343',
+        brightYellow: '#fdeb61',
+        brightBlue: '#84b0d8',
+        brightMagenta: '#bc94b7',
+        brightCyan: '#37e6e8',
+        brightWhite: '#f1f1f0'
       },
       allowTransparency: false,
       scrollback: 1000,
-      tabStopWidth: 4,
       bellStyle: 'none',
-      convertEol: false,
-      scrollOnUserInput: true,
-      rightClickSelectsWord: true
+      scrollOnUserInput: true
     });
 
     // 添加插件
     const fitAddon = new FitAddon();
     const webLinksAddon = new WebLinksAddon();
+    const unicode11Addon = new Unicode11Addon();
 
     try {
       term.loadAddon(fitAddon);
       term.loadAddon(webLinksAddon);
+      term.loadAddon(unicode11Addon);
+
+      // 设置 Unicode 版本为 11，正确处理宽字符（如中文）的宽度
+      term.unicode.activeVersion = '11';
 
       // 打开终端
       term.open(terminalRef.current);
+
+      // 加载 WebGL 渲染器（必须在 open 之后加载，官方 ttyd demo 使用 WebGL）
+      try {
+        const webglAddon = new WebglAddon();
+        webglAddon.onContextLoss(() => {
+          webglAddon.dispose();
+        });
+        term.loadAddon(webglAddon);
+        console.log('[ttyd] WebGL renderer loaded');
+      } catch (e) {
+        console.warn('[ttyd] WebGL renderer could not be loaded, using DOM renderer:', e);
+      }
 
       xtermRef.current = term;
       fitAddonRef.current = fitAddon;
@@ -426,7 +443,8 @@ const XtermTtydClient = () => {
     } catch (error) {
       console.error('[ttyd] Error initializing terminal:', error);
     }
-  }, [connectToTtyd]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
@@ -542,10 +560,6 @@ const XtermTtydClient = () => {
       <div
         ref={terminalRef}
         className="xterm-terminal"
-        style={{
-          height: '500px',
-          padding: '10px'
-        }}
       />
 
       {connectionStatus === 'connected' && (

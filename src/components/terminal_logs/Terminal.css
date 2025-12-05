@@ -136,6 +136,8 @@
 
 .xterm-terminal {
   background: #1e1e1e;
+  height: 500px;
+  padding: 5px;
 }
 
 /* xterm.js 自定义样式 */

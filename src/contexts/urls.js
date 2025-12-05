@@ -25,6 +25,7 @@ export const urls = {
     // log and Terminal
     wsTerminal: "/ws/system/terminal",
     wsLogs: "/ws/system/wslogs",
+    wsTtyd: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/",
 
     // AI inference
     modelList: "/model/list",
