@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { RecordAPI } from '../../contexts/API';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { RecordAPI, SUCCESS_CODE } from '../../contexts/API';
 import { toast } from '../base/Toast';
 import TimerConfig from './config/TimerConfig';
 import GpioConfig from './config/GpioConfig';
@@ -16,8 +16,11 @@ const RecordConfig = () => {
       iIntervalMs: 0
     }
   });
+
+  // 防抖定时器引用
+  const debounceTimerRef = useRef(null);
   const [recordRuleConfig, setRecordRuleConfig] = useState({
-    sType: 'lInferenceSet',
+    sCurrentSelected: 'InferenceSet',
     lInferenceSet: [],
     dTimer: { iIntervalSeconds: 60 },
     dGPIO: {
@@ -39,10 +42,10 @@ const RecordConfig = () => {
 
   // 触发类型列表
   const triggerTypes = [
-    { key: 'lInferenceSet', name: 'AI 推理触发', icon: '🤖' },
-    { key: 'dTimer', name: '定时触发', icon: '⏰' },
-    { key: 'dGPIO', name: 'GPIO 触发', icon: '🔌' },
-    { key: 'dTTY', name: '串口触发', icon: '📡' }
+    { key: 'InferenceSet', name: 'AI 推理触发', icon: '🤖' },
+    { key: 'Timer', name: '定时触发', icon: '⏰' },
+    { key: 'GPIO', name: 'GPIO 触发', icon: '🔌' },
+    { key: 'TTY', name: '串口触发', icon: '📡' }
   ];
 
   const fetchConfigs = useCallback(async () => {
@@ -64,7 +67,7 @@ const RecordConfig = () => {
 
       // 确保录制规则配置有默认值
       setRecordRuleConfig({
-        sType: recordRes.data?.sType || 'lInferenceSet',
+        sCurrentSelected: recordRes.data?.sCurrentSelected || 'InferenceSet',
         lInferenceSet: recordRes.data?.lInferenceSet || [],
         dTimer: recordRes.data?.dTimer || { iIntervalSeconds: 60 },
         dGPIO: recordRes.data?.dGPIO || {
@@ -86,17 +89,61 @@ const RecordConfig = () => {
   }, []);
 
   // 修改全局配置
-  const saveGlobalConfig = (field, value) => {
+  const saveGlobalConfig = async (field, value) => {
     const newConfig = {
       ...globalConfig,
       dWriterConfig: { ...globalConfig.dWriterConfig, [field]: value }
     };
+    try {
+      await RecordAPI.setRuleConfig(newConfig);
+      toast.success('全局配置保存成功');
+    } catch (error) {
+      toast.error('保存失败: ' + error);
+    }
+  };
+
+  // 防抖处理最小捕获间隔的变化
+  const handleIntervalChange = (value) => {
+    // 立即更新本地状态
+    const newConfig = {
+      ...globalConfig,
+      dWriterConfig: { ...globalConfig.dWriterConfig, iIntervalMs: value }
+    };
     setGlobalConfig(newConfig);
+
+    // 清除之前的定时器
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+
+    // 设置新的防抖定时器（500ms 后发送请求）
+    debounceTimerRef.current = setTimeout(async () => {
+      try {
+        if (value === 0 || isNaN(value)) {
+          toast.error('最小捕获间隔不能为0或NaN');
+          return;
+        }
+        await RecordAPI.setRuleConfig(newConfig);
+        toast.success('最小捕获间隔已保存');
+      } catch (error) {
+
+      }
+    }, 500);
   };
 
   useEffect(() => {
     fetchConfigs();
   }, [fetchConfigs]);
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // 打开配置弹窗
   const handleOpenConfig = (triggerType) => {
@@ -104,17 +151,17 @@ const RecordConfig = () => {
 
     // 确保所有配置字段都有默认值
     setTempRuleConfig({
-      sType: recordRuleConfig.sType || 'lInferenceSet',
+      sCurrentSelected: recordRuleConfig.sCurrentSelected || 'InferenceSet',
       lInferenceSet: recordRuleConfig.lInferenceSet || [],
       dTimer: recordRuleConfig.dTimer || { iIntervalSeconds: 60 },
       dGPIO: recordRuleConfig.dGPIO || {
-        sName: 'GPIO_01',
+        sName: 'GPIO 0',
         sInitialLevel: 'low',
         sSignal: 'high',
         iDebounceDurationMs: 100
       },
       dTTY: recordRuleConfig.dTTY || {
-        sName: 'ttyS0',
+        sName: 'Console',
         sCommand: 'RECORD'
       }
     });
@@ -126,37 +173,33 @@ const RecordConfig = () => {
   const handleSaveConfig = async () => {
     try {
       // 保存录制规则配置
+
       await RecordAPI.setRecordRuleConfig(tempRuleConfig);
 
       setRecordRuleConfig(tempRuleConfig);
       setConfigModalOpen(false);
       toast.success('配置保存成功');
-    } catch (error) {
-      toast.error('保存失败: ' + error.message);
-    }
+    } catch (error) { }
   };
 
   // 应用触发类型
   const handleApplyTriggerType = async (triggerType) => {
     try {
-      await RecordAPI.setRecordRuleConfig({ ...recordRuleConfig, sType: triggerType });
-      setRecordRuleConfig({ ...recordRuleConfig, sType: triggerType });
+      await RecordAPI.setRecordRuleConfig({ ...recordRuleConfig, sCurrentSelected: triggerType });
+      setRecordRuleConfig({ ...recordRuleConfig, sCurrentSelected: triggerType });
       toast.success(`已应用 ${triggerTypes.find(t => t.key === triggerType)?.name}`);
-    } catch (error) {
-      toast.error('应用失败: ' + error.message);
-    }
+    } catch (error) { }
   };
 
   // 切换录制规则启用状态
   const handleToggleRuleEnabled = async (enabled) => {
     try {
       const newConfig = { ...globalConfig, bRuleEnabled: enabled };
+
       await RecordAPI.setRuleConfig(newConfig);
       setGlobalConfig(newConfig);
       toast.success(enabled ? '已启用录制规则' : '已禁用录制规则');
-    } catch (error) {
-      toast.error('切换失败: ' + error.message);
-    }
+    } catch (error) { }
   };
 
   if (loading) {
@@ -186,19 +229,20 @@ const RecordConfig = () => {
                   </select>
                 </div>
                 <div className="form-group">
-                  <label>最小捕获间隔</label>
+                  <label>最小捕获间隔 (毫秒)</label>
                   <input
                     type="number"
                     className="input-field"
                     value={globalConfig.dWriterConfig.iIntervalMs}
-                    onChange={(e) => saveGlobalConfig('iIntervalMs', parseInt(e.target.value) || 0)}
+                    onChange={(e) => handleIntervalChange(parseInt(e.target.value))}
+                    placeholder="输入间隔时间"
                   />
                 </div>
               </div>
             </div>
             <div className="header-right">
               <span className="current-type">
-                当前: {triggerTypes.find(t => t.key === recordRuleConfig.sType)?.name || '未设置'}
+                当前: {triggerTypes.find(t => t.key === recordRuleConfig.sCurrentSelected)?.name || '未设置'}
               </span>
               <div className="header-switch">
                 <span className={`switch-status ${globalConfig.bRuleEnabled ? 'on' : 'off'}`}>
@@ -218,11 +262,11 @@ const RecordConfig = () => {
           <div className="card-body">
             <div className="trigger-type-list">
               {triggerTypes.map(trigger => (
-                <div key={trigger.key} className={`trigger-type-item ${recordRuleConfig.sType === trigger.key ? 'active' : ''}`}>
+                <div key={trigger.key} className={`trigger-type-item ${recordRuleConfig.sCurrentSelected === trigger.key ? 'active' : ''}`}>
                   <div className="trigger-info">
                     <span className="trigger-icon">{trigger.icon}</span>
                     <span className="trigger-name">{trigger.name}</span>
-                    {recordRuleConfig.sType === trigger.key && (
+                    {recordRuleConfig.sCurrentSelected === trigger.key && (
                       <span className="active-badge">当前使用</span>
                     )}
                   </div>
@@ -236,7 +280,7 @@ const RecordConfig = () => {
                     <button
                       className="btn btn-primary btn-small"
                       onClick={() => handleApplyTriggerType(trigger.key)}
-                      disabled={recordRuleConfig.sType === trigger.key}
+                      disabled={recordRuleConfig.sCurrentSelected === trigger.key}
                     >
                       应用
                     </button>
@@ -254,7 +298,7 @@ const RecordConfig = () => {
       {configModalOpen && tempRuleConfig && (
         <div className="modal-overlay" onClick={() => setConfigModalOpen(false)}>
           <div
-            className={`modal-content ${currentTriggerType === 'lInferenceSet' ? 'large' : ''}`}
+            className={`modal-content ${currentTriggerType === 'InferenceSet' ? 'large' : ''}`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="modal-header">
@@ -271,21 +315,21 @@ const RecordConfig = () => {
                 {/* <h4>触发类型配置</h4> */}
 
                 {/* 定时触发配置 */}
-                {currentTriggerType === 'dTimer' && (
+                {currentTriggerType === 'Timer' && (
                   <TimerConfig tempRuleConfig={tempRuleConfig} setTempRuleConfig={setTempRuleConfig} />)}
 
                 {/* GPIO 触发配置 */}
-                {currentTriggerType === 'dGPIO' && (
+                {currentTriggerType === 'GPIO' && (
                   <GpioConfig tempRuleConfig={tempRuleConfig} setTempRuleConfig={setTempRuleConfig} />
                 )}
 
                 {/* 串口触发配置 */}
-                {currentTriggerType === 'dTTY' && (
+                {currentTriggerType === 'TTY' && (
                   <TtyConfig tempRuleConfig={tempRuleConfig} setTempRuleConfig={setTempRuleConfig} />
                 )}
 
                 {/* AI 推理触发配置 */}
-                {currentTriggerType === 'lInferenceSet' && (
+                {currentTriggerType === 'InferenceSet' && (
                   <InferenceConfig
                     tempRuleConfig={tempRuleConfig}
                     setTempRuleConfig={setTempRuleConfig}

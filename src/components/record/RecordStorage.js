@@ -2,12 +2,15 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from '../base/Toast';
 import './RecordPage.css';
+import { RecordAPI } from '../../contexts/API';
 
 const RecordStorage = () => {
   const [loading, setLoading] = useState(true);
   const [storageStatus, setStorageStatus] = useState(null);
-  const [storageConfig, setStorageConfig] = useState({ sEnabledSlotName: '' });
   const [selectedSlot, setSelectedSlot] = useState(null);
+  const [quotaLimit, setQuotaLimit] = useState(0);
+  const [inUse, setInUse] = useState('');
+  const [currentDataDir, setCurrentDataDir] = useState('');
 
   const slotStateMap = {
     1: { label: '错误', color: '#ef4444' },
@@ -22,11 +25,20 @@ const RecordStorage = () => {
 
   const fetchStorageStatus = useCallback(async () => {
     try {
-      const response = await axios.get('/cgi-bin/entry.cgi/vigil/storage/status', {
-        baseURL: 'http://192.168.1.66:8000',
-        withCredentials: true
-      });
+      const response = await RecordAPI.getStorageStatus();
       setStorageStatus(response.data);
+      //设置显示的存储路径
+      if (response.data.sCurrentEnabledSlotDevPath) {
+        setCurrentDataDir('');
+        for (const slot of response.data.lSlots) {
+          if (slot.sDevPath === response.data.sCurrentEnabledSlotDevPath) {
+            setCurrentDataDir(slot.sMountPath + "/" + response.data.sDataDirName);
+            break;
+          }
+        }
+      } else {
+        setCurrentDataDir('');
+      }
       setLoading(false);
     } catch (error) {
       console.error('获取存储状态失败:', error);
@@ -37,61 +49,63 @@ const RecordStorage = () => {
     }
   }, [loading]);
 
+
   useEffect(() => {
     fetchStorageStatus();
-    fetchStorageConfig();
-
     // 每5秒刷新一次状态
     const interval = setInterval(() => {
       fetchStorageStatus();
-    }, 5000);
+    }, 1000);
+
 
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [fetchStorageStatus]);
 
-  const fetchStorageConfig = async () => {
-    try {
-      const response = await axios.get('/cgi-bin/entry.cgi/vigil/storage/config', {
-        baseURL: 'http://192.168.1.66:8000',
-        withCredentials: true
-      });
-      setStorageConfig(response.data);
-    } catch (error) {
-      console.error('获取存储配置失败:', error);
-    }
-  };
+  // useEffect(() => {
+  //   setInUse(storageStatus.sTargetEnabledSlotDevPath === slot.sDevPath &&
+  //     storageStatus.sCurrentEnabledSlotDevPath !== storageStatus.sTargetEnabledSlotDevPath);
 
+  // }, [storageStatus])
+
+  // 存储控制，发送执行命令到后端
   const handleStorageControl = async (action, slotName, slotConfig = null) => {
     try {
       const payload = {
         sAction: action,
-        sSlotName: slotName
+        sSlotDevPath: slotName
       };
-      
+
       if (slotConfig) {
         payload.dSlotConfig = slotConfig;
       }
+      if (action === 'free_up') {
+        const result = await toast.confirm('确定要删除所有录制数据吗?');
+        if (!result) {
+          return;
+        }
+      }
+      if (action === 'eject') {
+        const result = await toast.confirm('确定要弹出此设备吗?');
+        if (!result) {
+          return;
+        }
+      }
 
-      await axios.post('/cgi-bin/entry.cgi/vigil/storage/control', payload, {
-        baseURL: 'http://192.168.1.66:8000',
-        withCredentials: true
-      });
+      await RecordAPI.setStorageControl(payload);
 
       toast.success(`操作 ${action} 成功`);
-      
+
       // 刷新状态
       setTimeout(() => {
         fetchStorageStatus();
-        fetchStorageConfig();
       }, 1000);
-    } catch (error) {
-      toast.error('操作失败: ' + error.message);
-    }
+    } catch (error) { }
   };
 
   const formatBytes = (bytes) => {
+    if (bytes === null) return '未知';
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -105,6 +119,7 @@ const RecordStorage = () => {
   };
 
   const handleConfigSlot = (slot) => {
+    setQuotaLimit(parseInt(slot.iQuotaLimitBytes / 1024 / 1024));
     setSelectedSlot({
       ...slot,
       iQuotaLimitBytes: slot.iQuotaLimitBytes || 0,
@@ -112,6 +127,8 @@ const RecordStorage = () => {
     });
   };
 
+
+  // 保存空间限制配置
   const handleSaveSlotConfig = () => {
     if (!selectedSlot) return;
 
@@ -119,21 +136,18 @@ const RecordStorage = () => {
       iQuotaLimitBytes: selectedSlot.iQuotaLimitBytes,
       bQuotaRotate: selectedSlot.bQuotaRotate
     });
-    
+
     setSelectedSlot(null);
   };
 
   const handleEnableSlot = async (slotName) => {
+    setInUse(slotName);
     try {
-      await axios.post('/cgi-bin/entry.cgi/vigil/storage/config', {
-        sEnabledSlotName: slotName
-      }, {
-        baseURL: 'http://192.168.1.66:8000',
-        withCredentials: true
+      await RecordAPI.setStorageConfig({
+        sTargetEnabledSlotDevPath: slotName
       });
-      
       toast.success('存储设备启用成功');
-      fetchStorageConfig();
+      setInUse('');
     } catch (error) {
       toast.error('启用失败: ' + error.message);
     }
@@ -142,6 +156,8 @@ const RecordStorage = () => {
   if (loading) {
     return <div className="loading">加载中...</div>;
   }
+
+
 
   return (
     <div className="record-storage">
@@ -157,27 +173,23 @@ const RecordStorage = () => {
             <>
               <div className="storage-info">
                 <div className="info-item">
-                  <label>配置版本:</label>
-                  <span>{storageStatus.iRevision}</span>
-                </div>
-                <div className="info-item">
                   <label>数据目录:</label>
-                  <span>{storageStatus.sDataDirName}</span>
+                  <span>{currentDataDir}</span>
                 </div>
                 <div className="info-item">
                   <label>已启用设备:</label>
                   <span className="enabled-device">
-                    {storageConfig.sEnabledSlotName || '无'}
+                    {storageStatus.sCurrentEnabledSlotDevPath || '无'}
                   </span>
                 </div>
               </div>
 
               {/* 存储设备列表 */}
               <div className="storage-slots">
-                <h4>存储设备列表 ({storageStatus.dSlots?.length || 0})</h4>
-                {storageStatus.dSlots && storageStatus.dSlots.length > 0 ? (
+                <h4>存储设备列表 ({storageStatus.lSlots?.length || 0})</h4>
+                {storageStatus.lSlots && storageStatus.lSlots.length > 0 ? (
                   <div className="slots-grid">
-                    {storageStatus.dSlots.map((slot, index) => {
+                    {storageStatus.lSlots.map((slot, index) => {
                       const state = slotStateMap[slot.eState] || { label: '未知', color: '#6b7280' };
                       const usagePercent = getUsagePercentage(
                         slot.iStatsSizeBytes - slot.iStatsFreeBytes,
@@ -187,14 +199,18 @@ const RecordStorage = () => {
                         ? getUsagePercentage(slot.iQuotaUsedBytes, slot.iQuotaLimitBytes)
                         : 0;
 
-                      const isEnabled = storageConfig.sEnabledSlotName === slot.sDevPath;
+                      const isEnabled = storageStatus.sTargetEnabledSlotDevPath === slot.sDevPath &&
+                        storageStatus.sCurrentEnabledSlotDevPath === storageStatus.sTargetEnabledSlotDevPath;
+                      const useing = storageStatus.sTargetEnabledSlotDevPath === slot.sDevPath &&
+                        storageStatus.sCurrentEnabledSlotDevPath != storageStatus.sTargetEnabledSlotDevPath
+
 
                       return (
                         <div key={index} className={`storage-slot ${isEnabled ? 'enabled' : ''}`}>
                           <div className="slot-header">
                             <div className="slot-title">
                               <span className="slot-icon">
-                                {slot.bRemovable ? '💾' : '🗄️'}
+                                {slot.bInternal ? '🗄️' : '💾'}
                               </span>
                               <div>
                                 <div className="slot-name">{slot.sLabel || slot.sDevPath}</div>
@@ -235,11 +251,12 @@ const RecordStorage = () => {
                           <div className="storage-usage">
                             <div className="usage-label">
                               <span>存储空间</span>
+
                               <span>{formatBytes(slot.iStatsSizeBytes - slot.iStatsFreeBytes)} / {formatBytes(slot.iStatsSizeBytes)}</span>
                             </div>
                             <div className="progress-bar">
-                              <div 
-                                className="progress-fill" 
+                              <div
+                                className="progress-fill"
                                 style={{ width: `${usagePercent}%` }}
                               >
                                 {usagePercent}%
@@ -248,45 +265,39 @@ const RecordStorage = () => {
                           </div>
 
                           {/* 配额使用情况 */}
-                          {slot.iQuotaLimitBytes > 0 && (
-                            <div className="storage-usage">
-                              <div className="usage-label">
-                                <span>配额使用</span>
-                                <span>{formatBytes(slot.iQuotaUsedBytes)} / {formatBytes(slot.iQuotaLimitBytes)}</span>
-                              </div>
-                              <div className="progress-bar">
-                                <div 
-                                  className="progress-fill" 
-                                  style={{ 
-                                    width: `${quotaPercent}%`,
-                                    backgroundColor: quotaPercent > 90 ? '#ef4444' : '#3b82f6'
-                                  }}
-                                >
-                                  {quotaPercent}%
-                                </div>
-                              </div>
-                              <div className="quota-info">
-                                <span>循环覆盖: {slot.bQuotaRotate ? '启用' : '禁用'}</span>
-                              </div>
-                            </div>
-                          )}
 
-                          {/* 中继状态 */}
-                          {slot.dRelayStatus && slot.dRelayStatus.sRelayDirectory && (
-                            <div className="relay-status">
-                              <div className="relay-info">
-                                <span>🔗 中继活动中</span>
-                                <span>剩余时间: {slot.dRelayStatus.iRelayTimeoutRemain}s</span>
+                          <div className="storage-usage">
+                            <div className="usage-label">
+                              <span>配额使用</span>
+                              <span>
+                                {formatBytes(slot.iQuotaUsedBytes)} / {slot.iQuotaLimitBytes ?
+                                  formatBytes(slot.iQuotaLimitBytes) : formatBytes(slot.iStatsSizeBytes)}</span>
+                            </div>
+                            {slot.eState === 5 && inUse === slot.sDevPath && (
+                              <div className="storage-usage-tip">
+                                <span className="tip-icon">ℹ️</span>
+                                <span className="tip-text">首次使用将自动分配全部空间用于录制，可使用存储配置按钮配置使用空间</span>
                               </div>
-                              <div className="relay-directory">
-                                目录: {slot.dRelayStatus.sRelayDirectory}
+                            )}
+                            <div className="progress-bar">
+                              <div
+                                className="progress-fill"
+                                style={{
+                                  width: `${quotaPercent}%`,
+                                  backgroundColor: quotaPercent > 90 ? '#ef4444' : '#3b82f6'
+                                }}
+                              >
+                                {quotaPercent}%
                               </div>
                             </div>
-                          )}
+                            <div className="quota-info">
+                              <span>循环覆盖: {slot.bQuotaRotate ? '启用' : '禁用'}</span>
+                            </div>
+                          </div>
 
                           {/* 操作按钮 */}
                           <div className="slot-actions">
-                            {!isEnabled && slot.eState >= 5 && (
+                            {!isEnabled && slot.eState >= 5 && !useing && (
                               <button
                                 className="btn btn-small btn-primary"
                                 onClick={() => handleEnableSlot(slot.sDevPath)}
@@ -297,16 +308,19 @@ const RecordStorage = () => {
                             {isEnabled && (
                               <span className="enabled-badge">✓ 已启用</span>
                             )}
+                            {useing && !isEnabled && (
+                              <span className="enabled-badge"> 启用中...</span>
+                            )}
                             <button
                               className="btn btn-small"
                               onClick={() => handleConfigSlot(slot)}
                               disabled={slot.eState < 5}
                             >
-                              配置
+                              存储配置
                             </button>
                             {slot.eState === 2 && (
                               <button
-                                className="btn btn-small"
+                                className="btn btn-small btn-danger"
                                 onClick={() => handleStorageControl('format', slot.sDevPath)}
                               >
                                 格式化
@@ -315,36 +329,19 @@ const RecordStorage = () => {
                             {slot.eState >= 5 && (
                               <>
                                 <button
-                                  className="btn btn-small"
+                                  className="btn btn-small btn-danger"
                                   onClick={() => handleStorageControl('free_up', slot.sDevPath)}
                                 >
-                                  释放空间
+                                  删除所有录制数据
                                 </button>
-                                {!slot.dRelayStatus?.sRelayDirectory && (
-                                  <button
-                                    className="btn btn-small"
-                                    onClick={() => handleStorageControl('relay', slot.sDevPath)}
-                                  >
-                                    中继
-                                  </button>
-                                )}
-                                {slot.dRelayStatus?.sRelayDirectory && (
-                                  <button
-                                    className="btn btn-small"
-                                    onClick={() => handleStorageControl('unrelay', slot.sDevPath)}
-                                  >
-                                    取消中继
-                                  </button>
-                                )}
                               </>
                             )}
-                            {slot.bRemovable && slot.eState >= 5 && (
+                            {!slot.bInternal && slot.eState >= 5 && (
                               <button
                                 className="btn btn-small btn-danger"
                                 onClick={() => {
-                                  if (window.confirm('确定要弹出此设备吗?')) {
-                                    handleStorageControl('eject', slot.sDevPath);
-                                  }
+                                  handleStorageControl('eject', slot.sDevPath);
+
                                 }}
                               >
                                 弹出
@@ -385,18 +382,22 @@ const RecordStorage = () => {
                 />
               </div>
               <div className="form-group">
-                <label>配额限制 (字节)</label>
+                <label>配额限制 (MB)</label>
                 <input
                   type="number"
                   className="input-field"
-                  value={selectedSlot.iQuotaLimitBytes}
-                  onChange={(e) => setSelectedSlot({
-                    ...selectedSlot,
-                    iQuotaLimitBytes: parseInt(e.target.value) || 0
-                  })}
+                  value={quotaLimit}
+                  max={parseInt(selectedSlot.iStatsSizeBytes / 1024 / 1024)}
+                  onChange={(e) => {
+                    setQuotaLimit(e.target.value);
+                    setSelectedSlot({
+                      ...selectedSlot,
+                      iQuotaLimitBytes: parseInt(e.target.value) * 1024 * 1024 || 0
+                    })
+                  }}
                 />
                 <small className="form-hint">
-                  当前值: {formatBytes(selectedSlot.iQuotaLimitBytes)} (0 表示无限制)
+                  当前值: {quotaLimit} MB (0 表示无限制),最大值:{parseInt(selectedSlot.iStatsSizeBytes / 1024 / 1024)} MB
                 </small>
               </div>
               <div className="form-group">

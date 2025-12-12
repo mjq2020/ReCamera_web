@@ -31,7 +31,9 @@ const RecordSchedule = () => {
     try {
       setLoading(true);
       const response = await RecordAPI.getScheduleRuleConfig();
-      setSchedules(response.data || []);
+      // API 返回格式: { lActiveWeekdays: [...] }
+      const data = response.data?.lActiveWeekdays;
+      setSchedules(Array.isArray(data) ? data : []);
     } catch (error) {
       toast.error('获取日程配置失败: ' + error.message);
     } finally {
@@ -45,7 +47,8 @@ const RecordSchedule = () => {
 
   const handleSaveSchedules = async () => {
     try {
-      await RecordAPI.setScheduleRuleConfig(schedules);
+      // API 需要的格式: { lActiveWeekdays: [...] }
+      await RecordAPI.setScheduleRuleConfig({ lActiveWeekdays: schedules });
       toast.success('日程配置保存成功');
     } catch (error) {
       toast.error('保存失败: ' + error.message);
@@ -54,6 +57,10 @@ const RecordSchedule = () => {
 
   // 检查某个时间点是否在已有日程中
   const isTimeSlotActive = (day, hour, minute) => {
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      return false;
+    }
+    
     return schedules.some(schedule => {
       if (schedule.dStart.iDay !== day || schedule.dEnd.iDay !== day) {
         return false;
