@@ -4,22 +4,17 @@ import toast from "../../base/Toast";
 
 const DEFAULT_SETTINGS = {
     iEnabled: 0,
-    normalizedScreenSize: {
-        iNormalizedScreenHeight: 1080,
-        iNormalizedScreenWidth: 1920
-    },
     privacyMask: []
 }
+
+const MAX_MASK_COUNT = 6; // 最多支持6个遮盖区域
 
 export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingMode, setIsDrawingMode }) {
     const [localSettings, setLocalSettings] = useState({
         iEnabled: 0,
-        normalizedScreenSize: {
-            iNormalizedScreenHeight: 1080,
-            iNormalizedScreenWidth: 1920
-        },
         privacyMask: []
     });
+    const [fullConfig, setFullConfig] = useState({});
 
     const [loading, setLoading] = useState(false);
 
@@ -37,11 +32,14 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
 
     const loadSettings = async () => {
         try {
-            const response = await VideoAPI.getVideoOsdMask(0);
+            const response = await VideoAPI.getVideoOsdConfig();
             const data = response.data;
-            setLocalSettings(data);
+            // 从完整的OSD配置中提取maskOverlay部分
+            const maskData = data.maskOverlay || DEFAULT_SETTINGS;
+            setLocalSettings(maskData);
+            setFullConfig(data);
             if (setMaskSettings) {
-                setMaskSettings(data);
+                setMaskSettings(maskData);
             }
 
         } catch (err) {
@@ -49,7 +47,7 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
         }
     };
 
-    const handleToggle = () => {
+    const handleToggle = async () => {
         const newSettings = {
             ...localSettings,
             iEnabled: localSettings.iEnabled === 1 ? 0 : 1
@@ -58,15 +56,27 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
         if (setMaskSettings) {
             setMaskSettings(newSettings);
         }
+        try {
+            const newFullConfig = {
+                ...fullConfig,
+                maskOverlay: newSettings
+            };
+            await VideoAPI.postVideoOsdConfig(newFullConfig);
+        } catch (err) { }
+
     };
 
     const handleAddMask = () => {
+        if (localSettings.privacyMask.length >= MAX_MASK_COUNT) {
+            toast.warning(`最多只能添加${MAX_MASK_COUNT}个遮盖区域`);
+            return;
+        }
         const newMask = {
             id: localSettings.privacyMask.length,
-            iMaskHeight: 100,
-            iMaskWidth: 100,
-            iPositionX: 50,
-            iPositionY: 50
+            iMaskHeight: 0.2,  // 相对高度（20%）
+            iMaskWidth: 0.2,   // 相对宽度（20%）
+            iPositionX: 0.4,   // 相对X坐标（40%）
+            iPositionY: 0.4    // 相对Y坐标（40%）
         };
         const newSettings = {
             ...localSettings,
@@ -93,22 +103,8 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
         const newSettings = {
             ...localSettings,
             privacyMask: localSettings.privacyMask.map(mask =>
-                mask.id === id ? { ...mask, [field]: parseInt(value) } : mask
+                mask.id === id ? { ...mask, [field]: parseFloat(value) } : mask
             )
-        };
-        setLocalSettings(newSettings);
-        if (setMaskSettings) {
-            setMaskSettings(newSettings);
-        }
-    };
-
-    const handleScreenSizeChange = (field, value) => {
-        const newSettings = {
-            ...localSettings,
-            normalizedScreenSize: {
-                ...localSettings.normalizedScreenSize,
-                [field]: parseInt(value)
-            }
         };
         setLocalSettings(newSettings);
         if (setMaskSettings) {
@@ -125,7 +121,13 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
     const handleSave = async () => {
         setLoading(true);
         try {
-            await VideoAPI.postVideoOsdMask(0, localSettings);
+            // 更新maskOverlay部分
+            const newFullConfig = {
+                ...fullConfig,
+                maskOverlay: localSettings
+            };
+            // 提交完整配置
+            await VideoAPI.postVideoOsdConfig(newFullConfig);
             toast.success("图像遮盖设置保存成功！");
         } catch (err) {
             console.error("保存遮盖设置失败:", err);
@@ -166,46 +168,33 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
 
             {localSettings.iEnabled === 1 && (<div>
                 <div className="settings-section">
-                    <h4>屏幕尺寸（归一化）</h4>
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label>宽度</label>
-                            <input
-                                type="number"
-                                className="form-control"
-                                value={localSettings.normalizedScreenSize.iNormalizedScreenWidth}
-                                onChange={(e) => handleScreenSizeChange("iNormalizedScreenWidth", e.target.value)}
-                                min="1"
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>高度</label>
-                            <input
-                                type="number"
-                                className="form-control"
-                                value={localSettings.normalizedScreenSize.iNormalizedScreenHeight}
-                                onChange={(e) => handleScreenSizeChange("iNormalizedScreenHeight", e.target.value)}
-                                min="1"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="settings-section">
                     <div className="section-header">
-                        <h4>遮盖区域</h4>
+                        <h4>遮盖区域 ({localSettings.privacyMask.length}/{MAX_MASK_COUNT})</h4>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <button
                                 className={`btn btn-small ${isDrawingMode ? 'btn-danger' : 'btn-secondary'}`}
                                 onClick={toggleDrawingMode}
+                                disabled={localSettings.privacyMask.length >= MAX_MASK_COUNT}
                             >
                                 {isDrawingMode ? '✓ 绘制模式' : '🖱️ 在画面上绘制'}
                             </button>
-                            <button className="btn btn-small btn-primary" onClick={handleAddMask}>
+                            <button
+                                className="btn btn-small btn-primary"
+                                onClick={handleAddMask}
+                                disabled={localSettings.privacyMask.length >= MAX_MASK_COUNT}
+                            >
                                 + 手动添加
                             </button>
                         </div>
                     </div>
+
+                    {localSettings.privacyMask.length >= MAX_MASK_COUNT && (
+                        <div className="info-box" style={{ marginBottom: '16px', background: '#fff7ed', border: '1px solid #f59e0b' }}>
+                            <p className="info-text" style={{ color: '#92400e' }}>
+                                ⚠️ 已达到最大遮盖区域数量限制（{MAX_MASK_COUNT}个）
+                            </p>
+                        </div>
+                    )}
 
                     {isDrawingMode ? (
                         <div className="info-box" style={{ marginBottom: '16px' }}>
@@ -224,6 +213,7 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
                                 <li>拖拽边缘或角落可以调整大小</li>
                                 <li>按 <kbd style={{ padding: '2px 6px', background: '#ffffff', border: '1px solid #3b82f6', borderRadius: '4px', fontFamily: 'monospace' }}>Delete</kbd> 或 <kbd style={{ padding: '2px 6px', background: '#ffffff', border: '1px solid #3b82f6', borderRadius: '4px', fontFamily: 'monospace' }}>Backspace</kbd> 删除选中的遮盖</li>
                                 <li>按 <kbd style={{ padding: '2px 6px', background: '#ffffff', border: '1px solid #3b82f6', borderRadius: '4px', fontFamily: 'monospace' }}>ESC</kbd> 取消选中</li>
+                                <li><strong>坐标系统：</strong>使用相对坐标（0.0-1.0），0.5表示50%的位置</li>
                             </ul>
                         </div>
                     )}
@@ -247,46 +237,66 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
                                     </div>
                                     <div className="form-row">
                                         <div className="form-group">
-                                            <label>X坐标</label>
+                                            <label>X坐标（相对位置）</label>
                                             <input
                                                 type="number"
                                                 className="form-control"
                                                 value={mask.iPositionX}
                                                 onChange={(e) => handleMaskChange(mask.id, "iPositionX", e.target.value)}
                                                 min="0"
+                                                max="1"
+                                                step="0.001"
                                             />
+                                            <p className="help-text" style={{ fontSize: '11px', margin: '2px 0 0 0' }}>
+                                                取值范围: 0.0 ~ 1.0
+                                            </p>
                                         </div>
                                         <div className="form-group">
-                                            <label>Y坐标</label>
+                                            <label>Y坐标（相对位置）</label>
                                             <input
                                                 type="number"
                                                 className="form-control"
                                                 value={mask.iPositionY}
                                                 onChange={(e) => handleMaskChange(mask.id, "iPositionY", e.target.value)}
                                                 min="0"
+                                                max="1"
+                                                step="0.001"
                                             />
+                                            <p className="help-text" style={{ fontSize: '11px', margin: '2px 0 0 0' }}>
+                                                取值范围: 0.0 ~ 1.0
+                                            </p>
                                         </div>
                                     </div>
                                     <div className="form-row">
                                         <div className="form-group">
-                                            <label>宽度</label>
+                                            <label>宽度（相对尺寸）</label>
                                             <input
                                                 type="number"
                                                 className="form-control"
                                                 value={mask.iMaskWidth}
                                                 onChange={(e) => handleMaskChange(mask.id, "iMaskWidth", e.target.value)}
-                                                min="1"
+                                                min="0.01"
+                                                max="1"
+                                                step="0.001"
                                             />
+                                            <p className="help-text" style={{ fontSize: '11px', margin: '2px 0 0 0' }}>
+                                                取值范围: 0.01 ~ 1.0
+                                            </p>
                                         </div>
                                         <div className="form-group">
-                                            <label>高度</label>
+                                            <label>高度（相对尺寸）</label>
                                             <input
                                                 type="number"
                                                 className="form-control"
                                                 value={mask.iMaskHeight}
                                                 onChange={(e) => handleMaskChange(mask.id, "iMaskHeight", e.target.value)}
-                                                min="1"
+                                                min="0.01"
+                                                max="1"
+                                                step="0.001"
                                             />
+                                            <p className="help-text" style={{ fontSize: '11px', margin: '2px 0 0 0' }}>
+                                                取值范围: 0.01 ~ 1.0
+                                            </p>
                                         </div>
                                     </div>
                                 </div>

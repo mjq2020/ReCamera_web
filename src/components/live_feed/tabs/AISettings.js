@@ -23,19 +23,27 @@ export default function AISettings() {
 
     const loadSettings = async () => {
         try {
-            const response = await VideoAPI.getVideoOsdInference(0);
-            setSettings(response.data);
+            const response = await VideoAPI.getVideoOsdConfig();
+            const data = response.data;
+            setSettings(data);
         } catch (err) {
             console.error("加载AI设置失败:", err);
         }
     };
 
-    const handleToggle = () => {
-        setSettings(prev => ({
+    const handleToggle = async () => {
+        const newSettings = {
+            ...settings,
             inferenceOverlay: {
-                iEnabled: prev.inferenceOverlay.iEnabled === 1 ? 0 : 1
+                iEnabled: settings.inferenceOverlay.iEnabled === 1 ? 0 : 1
             }
-        }));
+        };
+        try {
+            await VideoAPI.postVideoOsdConfig(newSettings);
+            setSettings(newSettings);
+        } catch (err) {
+        }
+
     };
 
     const handleSave = async () => {

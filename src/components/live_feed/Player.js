@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import axios from "axios";
+import OSDOverlay from "./OSDOverlay";
 import "./LivePage.css";
 
 const axiosInstance = axios.create({
@@ -12,7 +13,9 @@ const axiosInstance = axios.create({
     }
 });
 
-export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainStream }) {
+const MAX_MASK_COUNT = 6; // 最多支持6个遮盖区域
+
+export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainStream, osdSettings, isOsdEditMode, onOsdUpdate }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
@@ -121,30 +124,28 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
         setIsLoading(false);
     };
 
-    // 辅助函数：将标准化坐标转换为画布坐标
-    const normalizedToCanvas = (mask, canvasWidth, canvasHeight) => {
+    // 辅助函数：将相对坐标（0-1）转换为画布坐标
+    const relativeToCanvas = (mask, canvasWidth, canvasHeight) => {
         if (!maskSettings) return null;
-        const normWidth = maskSettings.normalizedScreenSize.iNormalizedScreenWidth;
-        const normHeight = maskSettings.normalizedScreenSize.iNormalizedScreenHeight;
         
         return {
-            x: (mask.iPositionX / normWidth) * canvasWidth,
-            y: (mask.iPositionY / normHeight) * canvasHeight,
-            w: (mask.iMaskWidth / normWidth) * canvasWidth,
-            h: (mask.iMaskHeight / normHeight) * canvasHeight
+            x: mask.iPositionX * canvasWidth,
+            y: mask.iPositionY * canvasHeight,
+            w: mask.iMaskWidth * canvasWidth,
+            h: mask.iMaskHeight * canvasHeight
         };
     };
 
     // 辅助函数：检测鼠标是否在遮盖区域内
     const isPointInMask = (x, y, mask, canvasWidth, canvasHeight) => {
-        const rect = normalizedToCanvas(mask, canvasWidth, canvasHeight);
+        const rect = relativeToCanvas(mask, canvasWidth, canvasHeight);
         if (!rect) return false;
         return x >= rect.x && x <= rect.x + rect.w && y >= rect.y && y <= rect.y + rect.h;
     };
 
     // 辅助函数：检测鼠标是否在调整手柄上
     const getResizeHandle = (x, y, mask, canvasWidth, canvasHeight) => {
-        const rect = normalizedToCanvas(mask, canvasWidth, canvasHeight);
+        const rect = relativeToCanvas(mask, canvasWidth, canvasHeight);
         if (!rect) return null;
         
         const handleSize = 12; // 手柄检测区域大小
@@ -211,14 +212,12 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
 
             // 绘制已有的遮盖区域（显示所有遮盖，无论是否启用，以便编辑）
             if (maskSettings && maskSettings.privacyMask && maskSettings.privacyMask.length > 0) {
-                const normWidth = maskSettings.normalizedScreenSize.iNormalizedScreenWidth;
-                const normHeight = maskSettings.normalizedScreenSize.iNormalizedScreenHeight;
-
                 maskSettings.privacyMask.forEach((mask, index) => {
-                    const x = (mask.iPositionX / normWidth) * videoWidth;
-                    const y = (mask.iPositionY / normHeight) * videoHeight;
-                    const w = (mask.iMaskWidth / normWidth) * videoWidth;
-                    const h = (mask.iMaskHeight / normHeight) * videoHeight;
+                    // 使用相对坐标（0-1）直接计算画布坐标
+                    const x = mask.iPositionX * videoWidth;
+                    const y = mask.iPositionY * videoHeight;
+                    const w = mask.iMaskWidth * videoWidth;
+                    const h = mask.iMaskHeight * videoHeight;
 
                     const isSelected = selectedMaskId === mask.id;
                     const isHovered = hoveredMaskId === mask.id && !isDrawingMode;
@@ -293,8 +292,8 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
                             ctx.strokeRect(edge.x - handleSize/2, edge.y - handleSize/2, handleSize, handleSize);
                         });
 
-                        // 绘制尺寸信息（在遮盖区域下方）
-                        const sizeText = `${mask.iMaskWidth} × ${mask.iMaskHeight}`;
+                        // 绘制尺寸信息（在遮盖区域下方）- 显示相对值
+                        const sizeText = `${(mask.iMaskWidth * 100).toFixed(1)}% × ${(mask.iMaskHeight * 100).toFixed(1)}%`;
                         ctx.font = 'bold 12px sans-serif';
                         const sizeTextWidth = ctx.measureText(sizeText).width;
                         const sizeBoxX = x + w/2 - sizeTextWidth/2 - 6;
@@ -309,6 +308,41 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
                         ctx.fillText(sizeText, sizeBoxX + 6, sizeBoxY + 14);
                     }
                 });
+            }
+
+            // 如果在绘制模式下已达到最大数量，显示提示信息
+            if (isDrawingMode && maskSettings.privacyMask && maskSettings.privacyMask.length >= MAX_MASK_COUNT) {
+                // 在画布中央显示提示信息
+                const messageText = `已达到最大遮盖区域数量 (${MAX_MASK_COUNT}/${MAX_MASK_COUNT})`;
+                const subText = '请删除现有区域后再添加新区域';
+                
+                ctx.font = 'bold 16px sans-serif';
+                const messageWidth = ctx.measureText(messageText).width;
+                ctx.font = '14px sans-serif';
+                const subTextWidth = ctx.measureText(subText).width;
+                const maxWidth = Math.max(messageWidth, subTextWidth);
+                
+                const boxWidth = maxWidth + 40;
+                const boxHeight = 80;
+                const boxX = (canvas.width - boxWidth) / 2;
+                const boxY = (canvas.height - boxHeight) / 2;
+                
+                // 绘制半透明背景
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.95)';
+                ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+                
+                // 绘制边框
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(boxX, boxY, boxWidth, boxHeight);
+                
+                // 绘制警告图标和文字
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.fillText('⚠️ ' + messageText, boxX + 20, boxY + 30);
+                
+                ctx.font = '14px sans-serif';
+                ctx.fillText(subText, boxX + 20, boxY + 55);
             }
 
             // 绘制当前正在绘制的矩形（无论遮盖是否启用）
@@ -437,6 +471,11 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
         
         // 如果是绘制模式，创建新的遮盖
         if (isDrawingMode) {
+            // 检查是否已达到最大遮盖区域数量
+            if (maskSettings.privacyMask && maskSettings.privacyMask.length >= MAX_MASK_COUNT) {
+                // 已达到最大数量，不允许继续绘制
+                return;
+            }
             setIsDrawing(true);
             setDrawStart({ x, y });
             setCurrentRect({ x, y, width: 0, height: 0 });
@@ -470,7 +509,7 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
                     setSelectedMaskId(clickedMaskId);
                     setIsDragging(true);
                     
-                    const maskRect = normalizedToCanvas(clickedMask, canvasWidth, canvasHeight);
+                    const maskRect = relativeToCanvas(clickedMask, canvasWidth, canvasHeight);
                     setDragOffset({
                         x: x - maskRect.x,
                         y: y - maskRect.y
@@ -494,6 +533,13 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
         
+        // 如果在绘制模式下已达到最大数量，显示禁止图标
+        if (isDrawingMode && maskSettings && maskSettings.privacyMask && 
+            maskSettings.privacyMask.length >= MAX_MASK_COUNT && !isDrawing) {
+            canvas.style.cursor = 'not-allowed';
+            return;
+        }
+        
         // 如果正在绘制新遮盖
         if (isDrawing && drawStart) {
             const width = x - drawStart.x;
@@ -506,23 +552,20 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
         if (isDragging && selectedMaskId !== null && dragOffset && maskSettings) {
             const selectedMask = maskSettings.privacyMask.find(m => m.id === selectedMaskId);
             if (selectedMask) {
-                const normWidth = maskSettings.normalizedScreenSize.iNormalizedScreenWidth;
-                const normHeight = maskSettings.normalizedScreenSize.iNormalizedScreenHeight;
-                
                 const newX = x - dragOffset.x;
                 const newY = y - dragOffset.y;
                 
-                // 转换为标准化坐标
-                const normalizedX = Math.round((newX / canvasWidth) * normWidth);
-                const normalizedY = Math.round((newY / canvasHeight) * normHeight);
+                // 转换为相对坐标（0-1）
+                const relativeX = newX / canvasWidth;
+                const relativeY = newY / canvasHeight;
                 
-                // 限制在画布范围内
-                const clampedX = Math.max(0, Math.min(normalizedX, normWidth - selectedMask.iMaskWidth));
-                const clampedY = Math.max(0, Math.min(normalizedY, normHeight - selectedMask.iMaskHeight));
+                // 限制在画布范围内（0到1之间，且不能超出右下边界）
+                const clampedX = Math.max(0, Math.min(relativeX, 1 - selectedMask.iMaskWidth));
+                const clampedY = Math.max(0, Math.min(relativeY, 1 - selectedMask.iMaskHeight));
                 
                 updateMask(selectedMaskId, {
-                    iPositionX: clampedX,
-                    iPositionY: clampedY
+                    iPositionX: parseFloat(clampedX.toFixed(3)),
+                    iPositionY: parseFloat(clampedY.toFixed(3))
                 });
             }
             return;
@@ -532,10 +575,7 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
         if (isResizing && selectedMaskId !== null && drawStart && resizeHandle && maskSettings) {
             const selectedMask = maskSettings.privacyMask.find(m => m.id === selectedMaskId);
             if (selectedMask) {
-                const normWidth = maskSettings.normalizedScreenSize.iNormalizedScreenWidth;
-                const normHeight = maskSettings.normalizedScreenSize.iNormalizedScreenHeight;
-                
-                const maskRect = normalizedToCanvas(selectedMask, canvasWidth, canvasHeight);
+                const maskRect = relativeToCanvas(selectedMask, canvasWidth, canvasHeight);
                 const dx = x - drawStart.x;
                 const dy = y - drawStart.y;
                 
@@ -560,28 +600,29 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
                     newW = maskRect.w + dx;
                 }
                 
-                // 确保最小尺寸
-                const minSize = 20;
-                if (newW < minSize) {
-                    if (resizeHandle.includes('w')) newX = maskRect.x + maskRect.w - minSize;
-                    newW = minSize;
+                // 确保最小尺寸（相对值，至少1%）
+                const minRelativeSize = 0.01;
+                const minCanvasSize = minRelativeSize * Math.min(canvasWidth, canvasHeight);
+                if (newW < minCanvasSize) {
+                    if (resizeHandle.includes('w')) newX = maskRect.x + maskRect.w - minCanvasSize;
+                    newW = minCanvasSize;
                 }
-                if (newH < minSize) {
-                    if (resizeHandle.includes('n')) newY = maskRect.y + maskRect.h - minSize;
-                    newH = minSize;
+                if (newH < minCanvasSize) {
+                    if (resizeHandle.includes('n')) newY = maskRect.y + maskRect.h - minCanvasSize;
+                    newH = minCanvasSize;
                 }
                 
-                // 转换为标准化坐标
-                const normalizedX = Math.round((newX / canvasWidth) * normWidth);
-                const normalizedY = Math.round((newY / canvasHeight) * normHeight);
-                const normalizedW = Math.round((newW / canvasWidth) * normWidth);
-                const normalizedH = Math.round((newH / canvasHeight) * normHeight);
+                // 转换为相对坐标（0-1）
+                const relativeX = newX / canvasWidth;
+                const relativeY = newY / canvasHeight;
+                const relativeW = newW / canvasWidth;
+                const relativeH = newH / canvasHeight;
                 
                 updateMask(selectedMaskId, {
-                    iPositionX: Math.max(0, normalizedX),
-                    iPositionY: Math.max(0, normalizedY),
-                    iMaskWidth: Math.max(10, normalizedW),
-                    iMaskHeight: Math.max(10, normalizedH)
+                    iPositionX: parseFloat(Math.max(0, relativeX).toFixed(3)),
+                    iPositionY: parseFloat(Math.max(0, relativeY).toFixed(3)),
+                    iMaskWidth: parseFloat(Math.max(minRelativeSize, relativeW).toFixed(3)),
+                    iMaskHeight: parseFloat(Math.max(minRelativeSize, relativeH).toFixed(3))
                 });
                 
                 setDrawStart({ x, y });
@@ -629,35 +670,39 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
         if (isDrawing && drawStart && currentRect && maskSettings) {
             const canvas = canvasRef.current;
             
-            // 计算标准化坐标
+            // 计算相对坐标
             const videoWidth = canvas.width;
             const videoHeight = canvas.height;
-            const normWidth = maskSettings.normalizedScreenSize.iNormalizedScreenWidth;
-            const normHeight = maskSettings.normalizedScreenSize.iNormalizedScreenHeight;
             
             const x = Math.min(drawStart.x, drawStart.x + currentRect.width);
             const y = Math.min(drawStart.y, drawStart.y + currentRect.height);
             const w = Math.abs(currentRect.width);
             const h = Math.abs(currentRect.height);
             
-            // 转换为标准化坐标
-            const normalizedX = Math.round((x / videoWidth) * normWidth);
-            const normalizedY = Math.round((y / videoHeight) * normHeight);
-            const normalizedW = Math.round((w / videoWidth) * normWidth);
-            const normalizedH = Math.round((h / videoHeight) * normHeight);
+            // 转换为相对坐标（0-1）
+            const relativeX = x / videoWidth;
+            const relativeY = y / videoHeight;
+            const relativeW = w / videoWidth;
+            const relativeH = h / videoHeight;
             
-            // 只有当矩形有合理的尺寸时才添加
-            if (normalizedW > 10 && normalizedH > 10) {
-                const newMask = {
-                    id: maskSettings.privacyMask.length,
-                    iPositionX: normalizedX,
-                    iPositionY: normalizedY,
-                    iMaskWidth: normalizedW,
-                    iMaskHeight: normalizedH
-                };
-                
-                if (onMaskDrawn) {
-                    onMaskDrawn(newMask);
+            // 只有当矩形有合理的尺寸时才添加（至少1%）
+            const minRelativeSize = 0.01;
+            if (relativeW > minRelativeSize && relativeH > minRelativeSize) {
+                // 再次检查是否已达到最大数量（防止并发问题）
+                if (maskSettings.privacyMask.length >= MAX_MASK_COUNT) {
+                    console.warn('已达到最大遮盖区域数量限制');
+                } else {
+                    const newMask = {
+                        id: maskSettings.privacyMask.length,
+                        iPositionX: parseFloat(relativeX.toFixed(3)),
+                        iPositionY: parseFloat(relativeY.toFixed(3)),
+                        iMaskWidth: parseFloat(relativeW.toFixed(3)),
+                        iMaskHeight: parseFloat(relativeH.toFixed(3))
+                    };
+                    
+                    if (onMaskDrawn) {
+                        onMaskDrawn(newMask);
+                    }
                 }
             }
             
@@ -736,6 +781,13 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
                             setCurrentRect(null);
                         }
                     }}
+                    style={{ pointerEvents: isOsdEditMode ? 'none' : 'all' }}
+                />
+                <OSDOverlay 
+                    osdSettings={osdSettings}
+                    isOsdEditMode={isOsdEditMode}
+                    onOsdUpdate={onOsdUpdate}
+                    containerRef={containerRef}
                 />
                 {!isConnected && !isLoading && !error && (
                     <div className="video-overlay">

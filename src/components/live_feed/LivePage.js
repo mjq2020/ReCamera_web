@@ -7,6 +7,8 @@ export default function LivePage() {
     const [maskSettings, setMaskSettings] = useState(null);
     const [isDrawingMode, setIsDrawingMode] = useState(false);
     const [mainStream, setMainStream] = useState(true);
+    const [osdSettings, setOsdSettings] = useState(null);
+    const [isOsdEditMode, setIsOsdEditMode] = useState(false);
 
     return (
         <div className="live-page-container">
@@ -20,6 +22,9 @@ export default function LivePage() {
                         maskSettings={maskSettings}
                         isDrawingMode={isDrawingMode}
                         mainStream={mainStream}
+                        osdSettings={osdSettings}
+                        isOsdEditMode={isOsdEditMode}
+                        onOsdUpdate={setOsdSettings}
                         onMaskDrawn={(newMask, updatedMasks) => {
                             if (maskSettings) {
                                 if (updatedMasks) {
@@ -47,7 +52,10 @@ export default function LivePage() {
                         setIsDrawingMode={setIsDrawingMode}
                         mainStream={mainStream}
                         setMainStream={setMainStream}
-
+                        osdSettings={osdSettings}
+                        setOsdSettings={setOsdSettings}
+                        isOsdEditMode={isOsdEditMode}
+                        setIsOsdEditMode={setIsOsdEditMode}
                     />
                 </div>
             </div>

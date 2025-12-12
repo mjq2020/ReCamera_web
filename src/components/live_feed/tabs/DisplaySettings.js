@@ -525,7 +525,7 @@ export default function DisplaySettings() {
         }
     }
 
-    const handleSaveImageEnhancement = async (data=null) => {
+    const handleSaveImageEnhancement = async (data = null) => {
         try {
             if (data === null) {
                 await VideoAPI.putEnhancement(currentProfile, settings.profile[currentProfile].imageEnhancement);
@@ -580,7 +580,7 @@ export default function DisplaySettings() {
             handleSaveExposure(newProfile[currentProfile].exposure);
         } else if (category === "whiteBlance" && field === "sWhiteBlanceStyle") {
             handleSaveWhiteBlance(newProfile[currentProfile].whiteBlance);
-        }else if (category === "imageEnhancement" && field === "sNoiseReduceMode") {
+        } else if (category === "imageEnhancement" && field === "sNoiseReduceMode") {
             handleSaveImageEnhancement(newProfile[currentProfile].imageEnhancement);
         }
     };

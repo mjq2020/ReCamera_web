@@ -1,0 +1,45 @@
+/* OSD 叠加层样式 */
+
+.osd-overlay-item {
+    position: absolute;
+    pointer-events: auto;
+    z-index: 15;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.osd-overlay-item.editable {
+    cursor: move !important;
+}
+
+.osd-overlay-item.editable:hover {
+    background-color: rgba(76, 175, 80, 0.2);
+    outline: 2px dashed rgba(76, 175, 80, 0.6);
+    outline-offset: 2px;
+}
+
+.osd-overlay-item.dragging {
+    background-color: rgba(76, 175, 80, 0.3);
+    outline: 2px solid rgba(76, 175, 80, 0.8);
+    outline-offset: 2px;
+    cursor: grabbing !important;
+    z-index: 20;
+}
+
+/* 文本编辑输入框 */
+.osd-text-input {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid #4CAF50;
+    border-radius: 4px;
+    padding: 2px 6px;
+    outline: none;
+    font-family: Arial, sans-serif;
+    min-width: 100px;
+}
+
+.osd-text-input:focus {
+    background: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
+}
+
