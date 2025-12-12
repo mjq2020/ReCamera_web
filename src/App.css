@@ -14,7 +14,7 @@
 
 .content-area {
   flex: 1;
-  padding: 24px;
+  padding: 10px;
   overflow-y: auto;
   background: linear-gradient(135deg, #f6f8fb 0%, #e9ecef 100%);
   transition: all 0.3s ease;
