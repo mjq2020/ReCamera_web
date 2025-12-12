@@ -154,17 +154,21 @@
 .info-item {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .info-item label {
   font-weight: 600;
   color: var(--text-tertiary);
-  margin-right: 8px;
-  min-width: 100px;
+  min-width: 110px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .info-item span {
   color: var(--text-secondary);
+  flex: 1;
+  word-break: break-all;
 }
 
 .status-badge {
@@ -702,4 +706,45 @@
 .slider::-webkit-slider-thumb:hover {
   transform: scale(1.2);
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
+}
+
+/* 标签页导航 */
+.record-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 0;
+}
+
+.record-tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #64748b;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  bottom: -2px;
+}
+
+.record-tab:hover {
+  color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.record-tab.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.tab-icon {
+  font-size: 18px;
 }
