@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { DeviceInfoAPI } from '../../contexts/API'
-import './WiFi.css'
+import { DeviceInfoAPI } from '../../contexts/API';
+import { InfoGrid, InfoItem } from '../base/InfoDisplay';
+import './WiFi.css';
 import { Wifi, Eye, EyeOff } from 'lucide-react';
 import ipChecking from '../base/Checking';
 import toast from '../base/Toast';
@@ -75,8 +76,6 @@ function NetworkSetting() {
                 const response = await DeviceInfoAPI.getWlanInfo();
                 if (response.status === 200) {
                     setwiredInfo(response.data)
-
-                    console.log('1111', response.data)
                 }
             } catch (err) {
                 console.log(err)
@@ -196,60 +195,18 @@ function NetworkSetting() {
     };
 
     const dhcpPage = () => {
-
         return (
-            <div className='info-grid'>
-                <div className='info-item'>
-                    <label>
-                        IP地址:
-                    </label>
-                    <span>{wiredInfo?.dIpv4.sV4Address}</span>
-                </div>
-                <div className='info-item'>
-                    <label>
-                        网关地址:
-                    </label>
-                    <span>{wiredInfo?.dIpv4.sV4Gateway}</span>
-                </div>
-                <div className='info-item'>
-                    <label>
-                        子网掩码:
-                    </label>
-                    <span>{wiredInfo?.dIpv4.sV4Netmask}</span>
-                </div>
-                <div className='info-item'>
-                    <label>
-                        主DNS:
-                    </label>
-                    <span>{wiredInfo?.dLink.sDNS1}</span>
-                </div>
-                <div className='info-item'>
-                    <label>
-                        备用DNS:
-                    </label>
-                    <span>{wiredInfo?.dLink.sDNS2}</span>
-                </div>
-                <div className='info-item'>
-                    <label>
-                        设备名称:
-                    </label>
-                    <span>{wiredInfo?.dLink.sInterface}</span>
-                </div>
-                <div className='info-item'>
-                    <label>
-                        网络带宽:
-                    </label>
-                    <span>{wiredInfo?.dLink.sNicSpeed}</span>
-                </div>
-                <div className='info-item'>
-                    <label>
-                        MAC地址:
-                    </label>
-                    <span>{wiredInfo?.dLink.sAddress}</span>
-                </div>
-            </div>
-        )
-
+            <InfoGrid>
+                <InfoItem label="IP地址:" value={wiredInfo?.dIpv4.sV4Address} />
+                <InfoItem label="网关地址:" value={wiredInfo?.dIpv4.sV4Gateway} />
+                <InfoItem label="子网掩码:" value={wiredInfo?.dIpv4.sV4Netmask} />
+                <InfoItem label="主DNS:" value={wiredInfo?.dLink.sDNS1} />
+                <InfoItem label="备用DNS:" value={wiredInfo?.dLink.sDNS2} />
+                <InfoItem label="设备名称:" value={wiredInfo?.dLink.sInterface} />
+                <InfoItem label="网络带宽:" value={wiredInfo?.dLink.sNicSpeed} />
+                <InfoItem label="MAC地址:" value={wiredInfo?.dLink.sAddress} />
+            </InfoGrid>
+        );
     };
 
     const sendWlanConfig = (data) => {
@@ -313,79 +270,84 @@ function NetworkSetting() {
     };
 
     return (
-        <div className='content-card'>
-            <div className='card-header'>
-                <h3>WiFi设置</h3>
-                <div className='header-switch'>
-                    <span className={`switch-status ${wifiOn ? 'on' : 'off'}`}>{wifiOn ? '已开启' : '已关闭'}</span>
-                    <label className='toggle-switch'>
-                        <input type='checkbox' checked={wifiOn} onChange={wifiSwitch} />
-                        <span className='toggle-slider'></span>
-                    </label>
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))',
+            gap: '20px',
+            padding: '10px'
+        }}>
+            {/* WiFi设置卡片 */}
+            <div className='content-card' style={{ margin: 0 }}>
+                <div className='card-header'>
+                    <h3>WiFi设置</h3>
+                    <div className='header-switch'>
+                        <span className={`switch-status ${wifiOn ? 'on' : 'off'}`}>{wifiOn ? '已开启' : '已关闭'}</span>
+                        <label className='toggle-switch'>
+                            <input type='checkbox' checked={wifiOn} onChange={wifiSwitch} />
+                            <span className='toggle-slider'></span>
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div className='card-body'>
-                {wifiList && wifiList.map((wifi, index) => {
-                    return (
-                        <div
-                            key={wifi.sBssid}
-                            className={`wifi-item ${wifi.isConnected ? 'connected' : ''} ${index !== wifiList.length - 1 ? 'border-bottom' : ''
-                                }`}
-                        >
-                            <div className="wifi-info">
-                                <div className="signal-container">
-                                    {getSignalBars(wifi.iRssi)}
-                                </div>
-
-                                <div className="wifi-details">
-                                    <div className="wifi-name-row">
-                                        <h3 className="wifi-name">{wifi.sSsid}</h3>
-                                        {wifi.sFlags && (
-                                            <svg className="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <div className="wifi-status">
-                                        <span className="signal-text">
-                                            信号: {wifi.iRssi > -33 ? '强' : wifi.iRssi > -66 ? '中等' : '弱'}
-                                        </span>
-                                        {wifi.isConnected && (
-                                            <span className="connected-badge">已连接</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => handleToggleConnection(wifi)}
-                                className={`action-button ${wifi.isConnected ? 'disconnect' : 'connect'}`}
+                <div className='card-body'>
+                    {wifiList && wifiList.map((wifi, index) => {
+                        return (
+                            <div
+                                key={wifi.sBssid}
+                                className={`wifi-item ${wifi.isConnected ? 'connected' : ''} ${index !== wifiList.length - 1 ? 'border-bottom' : ''
+                                    }`}
                             >
-                                {wifi.isConnected ? '断开' : '连接'}
-                            </button>
-                        </div>
-                    );
-                })}
+                                <div className="wifi-info">
+                                    <div className="signal-container">
+                                        {getSignalBars(wifi.iRssi)}
+                                    </div>
 
-            </div>
-            <div className='card-header'>
-                <h3>有线网络设置</h3>
-                <div className='header-switch'>
-                    <select className='form-control' value={wiredOn ? "auto" : "manual"} onChange={handleChange}>
-                        <option value="auto">自动</option>
-                        <option value="manual">手动</option>
-                    </select>
-                    {/* <span className={`switch-status ${wiredOn ? 'on' : 'off'}`}>{wiredOn ? '自动' : '手动'}</span>
-                    <label className='toggle-switch'>
-                        <input type='checkbox' checked={wiredOn} onChange={() => { setWiredOn(!wiredOn) }} />
-                        <span className='toggle-slider'></span>
-                    </label> */}
+                                    <div className="wifi-details">
+                                        <div className="wifi-name-row">
+                                            <h3 className="wifi-name">{wifi.sSsid}</h3>
+                                            {wifi.sFlags && (
+                                                <svg className="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <div className="wifi-status">
+                                            <span className="signal-text">
+                                                信号: {wifi.iRssi > -33 ? '强' : wifi.iRssi > -66 ? '中等' : '弱'}
+                                            </span>
+                                            {wifi.isConnected && (
+                                                <span className="connected-badge">已连接</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => handleToggleConnection(wifi)}
+                                    className={`action-button ${wifi.isConnected ? 'disconnect' : 'connect'}`}
+                                >
+                                    {wifi.isConnected ? '断开' : '连接'}
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
-            <div className='card-body'>
-                {wiredOn ? dhcpPage() : staticPage()}
 
+            {/* 有线网络设置卡片 */}
+            <div className='content-card' style={{ margin: 0 }}>
+                <div className='card-header'>
+                    <h3>有线网络设置</h3>
+                    <div className='header-switch'>
+                        <select className='form-control' value={wiredOn ? "auto" : "manual"} onChange={handleChange}>
+                            <option value="auto">自动</option>
+                            <option value="manual">手动</option>
+                        </select>
+                    </div>
+                </div>
+                <div className='card-body'>
+                    {wiredOn ? dhcpPage() : staticPage()}
+                </div>
             </div>
 
             {/* WiFi 密码输入弹窗 */}

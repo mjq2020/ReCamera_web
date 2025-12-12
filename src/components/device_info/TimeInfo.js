@@ -37,11 +37,91 @@ function TimeSetting() {
         setCurrentTime({ ...currentTime, iTimestamp: date.getTime() / 1000 });
 
     };
+
+    const handleTimezoneChange = (e) => {
+        const selectedTimezone = e.target.value;
+        const timezoneMap = {
+            'Asia/Shanghai': 'UTC+8',
+            'Asia/Tokyo': 'UTC+9',
+            'Asia/Seoul': 'UTC+9',
+            'Asia/Hong_Kong': 'UTC+8',
+            'Asia/Singapore': 'UTC+8',
+            'Asia/Dubai': 'UTC+4',
+            'Europe/London': 'UTC+0',
+            'Europe/Paris': 'UTC+1',
+            'Europe/Berlin': 'UTC+1',
+            'Europe/Moscow': 'UTC+3',
+            'America/New_York': 'UTC-5',
+            'America/Chicago': 'UTC-6',
+            'America/Denver': 'UTC-7',
+            'America/Los_Angeles': 'UTC-8',
+            'America/Sao_Paulo': 'UTC-3',
+            'Australia/Sydney': 'UTC+10',
+            'Pacific/Auckland': 'UTC+12',
+            'UTC': 'UTC+0'
+        };
+
+        setCurrentTime({
+            ...currentTime,
+            sTimezone: selectedTimezone,
+            sTz: timezoneMap[selectedTimezone] || 'UTC+0'
+        });
+    };
+
+    // 将时间戳转换为datetime-local格式
+    const formatDateTimeLocal = (timestamp) => {
+        const date = new Date(timestamp * 1000); // 转换为毫秒
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+
     const manual = () => {
+        // 优先使用currentTime的时间戳，如果为空则使用当前时间
+        const displayTimestamp = currentTime?.iTimestamp || Math.floor(new Date().getTime() / 1000);
+        const displayValue = formatDateTimeLocal(displayTimestamp);
 
         return (
-            <div className='form-group' style={{ margin: "20px 0" }}>
-                <input type='datetime-local' className='form-control' onChange={handleTimeChange}></input>
+            <div>
+                <div className='form-group' style={{ margin: "20px 0" }}>
+                    <label>设置时间:</label>
+                    <input
+                        type='datetime-local'
+                        className='form-control'
+                        onChange={handleTimeChange}
+                        value={displayValue}
+                    />
+                </div>
+                <div className='form-group' style={{ margin: "20px 0" }}>
+                    <label>时区:</label>
+                    <select
+                        className='form-control'
+                        value={currentTime?.sTimezone || 'Asia/Shanghai'}
+                        onChange={handleTimezoneChange}
+                    >
+                        <option value="Asia/Shanghai">中国标准时间 (UTC+8)</option>
+                        <option value="Asia/Tokyo">日本标准时间 (UTC+9)</option>
+                        <option value="Asia/Seoul">韩国标准时间 (UTC+9)</option>
+                        <option value="Asia/Hong_Kong">香港时间 (UTC+8)</option>
+                        <option value="Asia/Singapore">新加坡时间 (UTC+8)</option>
+                        <option value="Asia/Dubai">迪拜时间 (UTC+4)</option>
+                        <option value="Europe/London">伦敦时间 (UTC+0)</option>
+                        <option value="Europe/Paris">巴黎时间 (UTC+1)</option>
+                        <option value="Europe/Berlin">柏林时间 (UTC+1)</option>
+                        <option value="Europe/Moscow">莫斯科时间 (UTC+3)</option>
+                        <option value="America/New_York">纽约时间 (UTC-5)</option>
+                        <option value="America/Chicago">芝加哥时间 (UTC-6)</option>
+                        <option value="America/Denver">丹佛时间 (UTC-7)</option>
+                        <option value="America/Los_Angeles">洛杉矶时间 (UTC-8)</option>
+                        <option value="America/Sao_Paulo">圣保罗时间 (UTC-3)</option>
+                        <option value="Australia/Sydney">悉尼时间 (UTC+10)</option>
+                        <option value="Pacific/Auckland">奥克兰时间 (UTC+12)</option>
+                        <option value="UTC">协调世界时 (UTC+0)</option>
+                    </select>
+                </div>
             </div>
         )
     };
@@ -87,27 +167,39 @@ function TimeSetting() {
             const timestamp = originTime?.iTimestamp || new Date().getTime()
             const timezone = originTime?.sTimezone || "Asia/Shanghai"
             const tz = originTime?.sTz || "UTC+8"
-            setCurrentTime({ sMethod: "manual", iTimestamp: timestamp, sTimezone: timezone, sTz: tz })
+            setCurrentTime({ sMethod: "manual", iTimestamp: timestamp, sTimezone: timezone, sTz: tz, dNtpConfig: null })
         }
     }
 
     return (
-        <div className="card">
-            <div className='card-body'>
-                <div className='form-group'>
-                    <label>当前时间</label>
-                    <select className='form-control' value={selectedMethod} onChange={handleChange}>
-                        <option value="ntp">自动刷新</option>
-                        <option value="manual">手动设置</option>
-                    </select>
-                    {selectedMethod === "ntp" ? ntp("adfa", "adfadf") : manual()}
+        <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            padding: '10px'
+        }}>
+            <div className="card" style={{
+                margin: 0,
+                maxWidth: '800px',
+                width: '100%'
+            }}>
+                <div className='card-header'>
+                    <h3>时间设置</h3>
                 </div>
+                <div className='card-body'>
+                    <div className='form-group'>
+                        <label>同步方式</label>
+                        <select className='form-control' value={selectedMethod} onChange={handleChange}>
+                            <option value="ntp">自动刷新 (NTP)</option>
+                            <option value="manual">手动设置</option>
+                        </select>
+                        {selectedMethod === "ntp" ? ntp("adfa", "adfadf") : manual()}
+                    </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
-                    <button className='btn btn-primary' onClick={sendTime}>设置</button>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+                        <button className='btn btn-primary' onClick={sendTime}>设置</button>
+                    </div>
                 </div>
             </div>
-
         </div>
 
     )

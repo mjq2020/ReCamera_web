@@ -1,21 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { DeviceInfoAPI } from '../../contexts/API'
-import './WiFi.css'
+import { DeviceInfoAPI } from '../../contexts/API';
+import { InfoSection, InfoResource } from '../base/InfoDisplay';
 
 // BaseInfo 基本信息组件
 function BaseInfo() {
     // 使用 useState 存储响应数据
     const [baseInfo, setBaseInfo] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [currentTime, setCurrentTime] = useState(null); // 当前显示的时间
 
     // 使用 useEffect 处理异步请求
     useEffect(() => {
         const fetchDeviceInfo = async () => {
             try {
-                setLoading(true);
-                setError(null);
 
                 // 并行获取所有数据
                 const [deviceResponse, timeResponse, resourceResponse] = await Promise.all([
@@ -42,9 +38,9 @@ function BaseInfo() {
 
             } catch (err) {
                 console.error('请求失败:', err);
-                setError(err.message);
+
             } finally {
-                setLoading(false);
+
             }
         };
 
@@ -74,179 +70,57 @@ function BaseInfo() {
         return date.toLocaleString('zh-CN');
     };
 
-    // 加载状态
-    if (loading) {
-        return (
-            <div className="page-container">
-                <div className="card">
-                    <div className="card-body" style={{ textAlign: 'center', padding: '60px' }}>
-                        <div className="loading-spinner">⏳</div>
-                        <p style={{ marginTop: '16px', color: 'var(--text-secondary)' }}>
-                            正在加载设备信息...
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // 准备设备信息数据
+    const deviceInfoItems = [
+        { key: 'deviceName', label: '设备名称:', value: baseInfo?.sDeviceName },
+        { key: 'basePlate', label: '主板型号:', value: baseInfo?.sBasePlateModel },
+        { key: 'sensor', label: '传感器型号:', value: baseInfo?.sSensorModel },
+        { key: 'firmware', label: '固件版本:', value: baseInfo?.sFirmwareVersion },
+        { key: 'serial', label: '序列号:', value: baseInfo?.sSerialNumber },
+        { key: 'mac', label: 'MAC地址:', value: baseInfo?.sMacAddress }
+    ];
 
-    // 错误状态
-    if (error) {
-        return (
-            <div className="page-container">
-                <div className="card">
-                    <div className="card-body">
-                        <div style={{
-                            padding: '20px',
-                            backgroundColor: '#fee',
-                            border: '1px solid #fcc',
-                            borderRadius: '4px',
-                            color: '#c00',
-                            fontSize: '14px',
-                            textAlign: 'center'
-                        }}>
-                            ⚠️ 请求失败: {error}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // 准备时间信息数据
+    const timeInfoItems = [
+        { key: 'currentTime', label: '当前时间:', value: formatTimestamp(currentTime) },
+        { key: 'timezone', label: '时区:', value: baseInfo?.sTimezone },
+        { key: 'tz', label: '时区代码:', value: baseInfo?.sTz },
+        { key: 'method', label: '同步方式:', value: baseInfo?.sMethod }
+    ];
+
+    const resourceInfoItems = [
+        { key: 'cpuUsage', label: 'CPU 使用率:', value: baseInfo?.iCpuUsage },
+        { key: 'npuUsage', label: 'NPU 使用率:', value: baseInfo?.iNpuUsage },
+        { key: 'memUsage', label: '内存使用率:', value: baseInfo?.iMemUsage },
+        { key: 'storageUsage', label: '存储使用率:', value: baseInfo?.iStorageUsage }
+    ];
 
     return (
-        <div className="page-container">
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+            gap: '20px',
+            padding: '10px'
+        }}>
             {/* 设备基本信息卡片 */}
-            <div className="card">
-                <div className="card-header">
-                    <h3>设备基本信息</h3>
-                </div>
-                <div className="card-body">
-                    <div className="info-grid">
-                        <div className="info-item">
-                            <label>设备名称:</label>
-                            <span>{baseInfo?.sDeviceName || '-'}</span>
-                        </div>
-                        <div className="info-item">
-                            <label>主板型号:</label>
-                            <span>{baseInfo?.sBasePlateModel || '-'}</span>
-                        </div>
-                        <div className="info-item">
-                            <label>传感器型号:</label>
-                            <span>{baseInfo?.sSensorModel || '-'}</span>
-                        </div>
-                        <div className="info-item">
-                            <label>固件版本:</label>
-                            <span>{baseInfo?.sFirmwareVersion || '-'}</span>
-                        </div>
-                        <div className="info-item">
-                            <label>序列号:</label>
-                            <span>{baseInfo?.sSerialNumber || '-'}</span>
-                        </div>
-                        <div className="info-item">
-                            <label>MAC地址:</label>
-                            <span>{baseInfo?.sMacAddress || '-'}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <InfoSection
+                title="设备基本信息"
+                items={deviceInfoItems}
+            />
 
             {/* 系统时间信息卡片 */}
-            <div className="card">
-                <div className="card-header">
-                    <h3>系统时间信息</h3>
-                </div>
-                <div className="card-body">
-                    <div className="info-grid">
-                        <div className="info-item">
-                            <label>当前时间:</label>
-                            <span>{formatTimestamp(currentTime)}</span>
-                        </div>
-                        <div className="info-item">
-                            <label>时区:</label>
-                            <span>{baseInfo?.sTimezone || '-'}</span>
-                        </div>
-                        <div className="info-item">
-                            <label>时区代码:</label>
-                            <span>{baseInfo?.sTz || '-'}</span>
-                        </div>
-                        <div className="info-item">
-                            <label>同步方式:</label>
-                            <span>{baseInfo?.sMethod || '-'}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <InfoSection
+                title="系统时间信息"
+                items={timeInfoItems}
+            />
 
             {/* 系统资源状态卡片 */}
-            <div className="card">
+            <div className="card" style={{ margin: 0 }}>
                 <div className="card-header">
                     <h3>系统资源状态</h3>
                 </div>
                 <div className="card-body">
-                    {baseInfo?.iCpuUsage !== undefined && (
-                        <div className="resource-item">
-                            <label>CPU 使用率</label>
-                            <div className="progress-bar">
-                                <div
-                                    className="progress-fill"
-                                    style={{
-                                        width: `${baseInfo.iCpuUsage}%`,
-                                        background: baseInfo.iCpuUsage >= 80 ? '#ee0a1dff' : '#0fe464ff'
-                                    }}
-                                >
-                                    {baseInfo.iCpuUsage}%
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    {baseInfo?.iNpuUsage !== undefined && (
-                        <div className="resource-item">
-                            <label>NPU 使用率</label>
-                            <div className="progress-bar">
-                                <div
-                                    className="progress-fill"
-                                    style={{
-                                        width: `${baseInfo.iNpuUsage}%`,
-                                        background: baseInfo.iNpuUsage >= 80 ? '#ee0a1dff' : '#0fe464ff'
-                                    }}
-                                >
-                                    {baseInfo.iNpuUsage}%
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    {baseInfo?.iMemUsage !== undefined && (
-                        <div className="resource-item">
-                            <label>内存使用率</label>
-                            <div className="progress-bar">
-                                <div
-                                    className="progress-fill"
-                                    style={{
-                                        width: `${baseInfo.iMemUsage}%`,
-                                        background: baseInfo.iMemUsage >= 80 ? '#ee0a1dff' : '#0fe464ff'
-                                    }}
-                                >
-                                    {baseInfo.iMemUsage}%
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    {baseInfo?.iStorageUsage !== undefined && (
-                        <div className="resource-item">
-                            <label>存储使用率</label>
-                            <div className="progress-bar">
-                                <div
-                                    className="progress-fill"
-                                    style={{
-                                        width: `${baseInfo.iStorageUsage}%`,
-                                        background: baseInfo.iStorageUsage >= 80 ? '#ee0a1dff' : '#0fe464ff'
-                                    }}
-                                >
-                                    {baseInfo.iStorageUsage}%
-                                </div>
-                            </div>
-                        </div>
-                    )}
+                    {resourceInfoItems.map(item => <InfoResource label={item.label} value={item.value} />)}
                 </div>
             </div>
         </div>

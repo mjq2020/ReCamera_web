@@ -4,13 +4,13 @@ import './Sidebar.css';
 
 const Sidebar = ({ activeTab, onTabChange }) => {
   const { t, language, theme, toggleLanguage, toggleTheme, username, logout } = useApp();
-  
+
   const menuItems = [
     { id: 'device-info', labelKey: 'sidebar.deviceInfo', icon: '📱' },
     { id: 'live-view', labelKey: 'sidebar.liveView', icon: '📹' },
-    { id: 'record-settings', labelKey: 'sidebar.recordSettings', icon: '⚙️' },
+    { id: 'record-settings', labelKey: 'sidebar.recordSettings', icon: '🎥' },
     { id: 'ai-inference', labelKey: 'sidebar.aiInference', icon: '🤖' },
-    { id: 'terminal', labelKey: 'sidebar.terminal', icon: '💻' }
+    { id: 'terminal', labelKey: 'sidebar.terminal', icon: '💻' } //终端图标
   ];
 
   return (
@@ -50,7 +50,7 @@ const Sidebar = ({ activeTab, onTabChange }) => {
         )}
 
         {/* 语言切换 */}
-        <button 
+        <button
           className="sidebar-control-button"
           onClick={toggleLanguage}
           title={language === 'zh' ? 'Switch to English' : '切换到中文'}
@@ -60,7 +60,7 @@ const Sidebar = ({ activeTab, onTabChange }) => {
         </button>
 
         {/* 主题切换 */}
-        <button 
+        <button
           className="sidebar-control-button"
           onClick={toggleTheme}
           title={theme === 'light' ? t('common.dark') : t('common.light')}
@@ -72,7 +72,7 @@ const Sidebar = ({ activeTab, onTabChange }) => {
         </button>
 
         {/* 登出按钮 */}
-        <button 
+        <button
           className="sidebar-control-button logout-button"
           onClick={logout}
           title="登出"
