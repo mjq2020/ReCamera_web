@@ -1,9 +1,14 @@
 from __future__ import annotations
 
 import secrets
+import hashlib
+import tempfile
+import os
 from datetime import datetime, timezone
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status, Request, Header, Query
+from typing import Optional
 
 from ..dependencies import require_auth
 from ..schemas.system import (
@@ -76,9 +81,152 @@ def get_resource_info(_: str = Depends(require_auth)) -> ResourceInfoResponse:
 
 
 @router.post("/system/firmware-upgrade")
-def firmware_upgrade(payload: FirmwareUpgradeRequest, _: str = Depends(require_auth)):
-    upload_type = payload.upload_type
-    if upload_type == "network":
+async def firmware_upgrade(
+    request: Request,
+    response: Response,
+    upload_type: Optional[str] = Query(None, alias="upload-type"),
+    id: Optional[str] = Query(None),
+    start: Optional[str] = Query(None),
+    md5sum: Optional[str] = Query(None),
+    content_range: Optional[str] = Header(None),
+    _: str = Depends(require_auth)
+):
+    """
+    固件上传端点，支持三种模式：
+    1. 初始化上传：upload-type=resumable -> 返回 File-Id
+    2. 上传分块：id=<file_id>, Content-Range=bytes start-end -> 接收数据块
+    3. 完成上传：start=<file_id>, md5sum=<hash> -> 验证并完成
+    """
+    
+    # 模式1: 初始化上传
+    if upload_type == "resumable" and not id and not start:
+        # 生成唯一的文件ID
+        file_id = secrets.token_hex(16)
+        
+        # 创建临时文件来存储上传的数据
+        temp_dir = Path(tempfile.gettempdir()) / "firmware_uploads"
+        temp_dir.mkdir(exist_ok=True)
+        temp_file = temp_dir / f"{file_id}.bin"
+        
+        # 保存上传状态
+        state.firmware_uploads[file_id] = {
+            "file_path": str(temp_file),
+            "received_bytes": 0,
+            "chunks": [],
+            "status": "uploading"
+        }
+        
+        # 在响应头中返回 File-Id
+        response.headers["File-Id"] = file_id
+        
+        return {"status": "initialized", "file_id": file_id}
+    
+    # 模式2: 上传文件分块
+    elif id and not start and not md5sum:
+        if id not in state.firmware_uploads:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file ID"
+            )
+        
+        upload_info = state.firmware_uploads[id]
+        
+        # 读取请求体（文件分块）
+        chunk_data = await request.body()
+        
+        # 解析 Content-Range 头
+        if content_range:
+            # Content-Range: bytes 0-524287
+            try:
+                range_part = content_range.replace("bytes ", "")
+                start_byte, end_byte = map(int, range_part.split("-"))
+            except:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid Content-Range header"
+                )
+        else:
+            start_byte = upload_info["received_bytes"]
+            end_byte = start_byte + len(chunk_data) - 1
+        
+        # 将分块追加到文件
+        file_path = upload_info["file_path"]
+        with open(file_path, "ab") as f:
+            f.write(chunk_data)
+        
+        # 更新状态
+        upload_info["received_bytes"] = end_byte + 1
+        upload_info["chunks"].append({
+            "start": start_byte,
+            "end": end_byte,
+            "size": len(chunk_data)
+        })
+        
+        return {
+            "status": "chunk_received",
+            "received_bytes": upload_info["received_bytes"],
+            "chunk_count": len(upload_info["chunks"])
+        }
+    
+    # 模式3: 完成上传
+    elif start and md5sum:
+        file_id = start
+        
+        if file_id not in state.firmware_uploads:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid file ID"
+            )
+        
+        upload_info = state.firmware_uploads[file_id]
+        file_path = upload_info["file_path"]
+        
+        # 验证文件是否存在
+        if not os.path.exists(file_path):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded file not found"
+            )
+        
+        # 计算文件的MD5
+        md5_hash = hashlib.md5()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                md5_hash.update(chunk)
+        
+        calculated_md5 = md5_hash.hexdigest()
+        
+        # 验证MD5
+        if calculated_md5.lower() != md5sum.lower():
+            # MD5不匹配，清理文件
+            os.remove(file_path)
+            del state.firmware_uploads[file_id]
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"MD5 mismatch. Expected: {md5sum}, Got: {calculated_md5}"
+            )
+        
+        # MD5验证通过
+        upload_info["status"] = "completed"
+        upload_info["md5"] = calculated_md5
+        
+        # 这里可以添加实际的固件更新逻辑
+        # 例如：解压固件、验证签名、应用更新等
+        
+        # 模拟固件更新成功
+        file_size = os.path.getsize(file_path)
+        
+        return {
+            "code": 0,
+            "message": "Firmware upload successful",
+            "file_id": file_id,
+            "file_size": file_size,
+            "md5": calculated_md5,
+            "status": "completed"
+        }
+    
+    # 模式4: 网络更新
+    elif upload_type == "network":
         token = secrets.token_hex(8)
         payload = {
             "iUpdateAvailable": 1,
@@ -88,7 +236,12 @@ def firmware_upgrade(payload: FirmwareUpgradeRequest, _: str = Depends(require_a
         }
         state.firmware_tokens[token] = payload
         return payload
-    return {"status": 1, "message": "Upload accepted"}
+    
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request parameters"
+        )
 
 
 @router.post("/system/firmware-network")

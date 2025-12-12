@@ -147,3 +147,66 @@ class WebRTCOffer(BaseModel):
 class WebRTCAnswer(BaseModel):
     sdp: str
     type: Literal["answer"]
+
+
+# OSD 配置相关模型（使用相对坐标 0-1）
+class OSDAttributeConfig(BaseModel):
+    """OSD 字体属性配置"""
+    iOSDFontSize: int = Field(..., description="字体大小，取值:0, 16, 32, 48, 64, 其中0表示自适应")
+    sOSDFrontColor: str = Field(..., pattern=r"^[0-9a-fA-F]{6}$", description="字体颜色，RGB十六进制表示法")
+    sOSDFrontColorMode: int = Field(..., ge=0, le=1, description="字体颜色模式, 0=黑白自动, 1=自定义")
+
+
+class ChannelNameOverlayConfig(BaseModel):
+    """通道名称覆盖配置"""
+    iEnabled: int = Field(..., ge=0, le=1, description="0=关闭, 1=开启")
+    iPositionX: float = Field(..., ge=0, le=1, description="X坐标相对位置")
+    iPositionY: float = Field(..., ge=0, le=1, description="Y坐标相对位置")
+    sChannelName: str = Field(..., description="通道名称")
+
+
+class DateTimeOverlayConfig(BaseModel):
+    """日期时间覆盖配置"""
+    iEnabled: int = Field(..., ge=0, le=1, description="0=关闭, 1=开启")
+    iDisplayWeekEnabled: int = Field(..., ge=0, le=1, description="0=不显示星期, 1=显示星期")
+    iPositionX: float = Field(..., ge=0, le=1, description="X坐标相对位置")
+    iPositionY: float = Field(..., ge=0, le=1, description="Y坐标相对位置")
+    sDateStyle: str = Field(..., description="日期格式")
+    sTimeStyle: Literal["12hour", "24hour"] = Field(..., description="时间格式")
+
+
+class SNOverlayConfig(BaseModel):
+    """SN信息覆盖配置"""
+    iEnabled: int = Field(..., ge=0, le=1, description="0=关闭, 1=开启")
+    iPositionX: float = Field(..., ge=0, le=1, description="X坐标相对位置")
+    iPositionY: float = Field(..., ge=0, le=1, description="Y坐标相对位置")
+
+
+class InferenceOverlayConfig(BaseModel):
+    """推理覆盖配置"""
+    iEnabled: int = Field(..., ge=0, le=1, description="0=关闭, 1=开启")
+
+
+class PrivacyMaskConfig(BaseModel):
+    """遮挡区域配置"""
+    id: int = Field(..., ge=0, description="遮挡区域ID")
+    iMaskHeight: float = Field(..., ge=0, le=1, description="遮挡区域相对高度")
+    iMaskWidth: float = Field(..., ge=0, le=1, description="遮挡区域相对宽度")
+    iPositionX: float = Field(..., ge=0, le=1, description="左上角X坐标相对位置")
+    iPositionY: float = Field(..., ge=0, le=1, description="左上角Y坐标相对位置")
+
+
+class MaskOverlayConfig(BaseModel):
+    """遮罩覆盖配置"""
+    iEnabled: int = Field(..., ge=0, le=1, description="0=关闭, 1=开启")
+    privacyMask: list[PrivacyMaskConfig] = Field(..., max_items=6, description="遮挡区域列表，最多6个")
+
+
+class OSDConfig(BaseModel):
+    """完整的 OSD 配置"""
+    attribute: OSDAttributeConfig
+    channelNameOverlay: ChannelNameOverlayConfig
+    dateTimeOverlay: DateTimeOverlayConfig
+    SNOverlay: SNOverlayConfig
+    inferenceOverlay: InferenceOverlayConfig
+    maskOverlay: MaskOverlayConfig

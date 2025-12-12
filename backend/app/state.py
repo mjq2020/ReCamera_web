@@ -16,6 +16,10 @@ class BackendState:
             "admin": "d6ee129defe0bda1b0b7ff1f40f57dcc9afdd85b67f3bf36c8dff5cff526baa9"
         }
     )
+    # 中继UUID映射到存储设备
+    relay_mappings: Dict[str, str] = field(default_factory=dict)
+    # 模拟文件系统 {设备路径: {文件路径: 文件信息}}
+    mock_filesystems: Dict[str, Dict[str, Dict]] = field(default_factory=dict)
     device_info: Dict[str, str] = field(
         default_factory=lambda: {
             "sSerialNumber": "RC1126B-" + secrets.token_hex(4).upper(),
@@ -122,6 +126,8 @@ class BackendState:
     )
     config_blob: Dict[str, Dict] = field(default_factory=dict)
     firmware_tokens: Dict[str, Dict] = field(default_factory=dict)
+    # 固件上传状态管理
+    firmware_uploads: Dict[str, Dict] = field(default_factory=dict)
     video_streams: Dict[int, Dict[str, Dict]] = field(
         default_factory=lambda: {
             0: {
@@ -357,7 +363,7 @@ class BackendState:
     # 3. 录制规则配置
     record_rule_config: Dict[str, object] = field(
         default_factory=lambda: {
-            "sType": "lInferenceSet",
+            "sCurrentSelected": "lInferenceSet",
             "lInferenceSet": [
                 {
                     "sID": "person_detection",
@@ -433,17 +439,61 @@ class BackendState:
             },
         }
     )
+    # OSD 配置
+    osd_config: Dict[str, object] = field(
+        default_factory=lambda: {
+            "attribute": {
+                "iOSDFontSize": 64,
+                "sOSDFrontColor": "fff799",
+                "sOSDFrontColorMode": 1
+            },
+            "channelNameOverlay": {
+                "iEnabled": 1,
+                "iPositionX": 0.528,
+                "iPositionY": 0.458,
+                "sChannelName": "reCamera 1126B"
+            },
+            "dateTimeOverlay": {
+                "iEnabled": 1,
+                "iDisplayWeekEnabled": 1,
+                "iPositionX": 0.05,
+                "iPositionY": 0.244,
+                "sDateStyle": "CHR-YYYY-MM-DD",
+                "sTimeStyle": "24hour"
+            },
+            "SNOverlay": {
+                "iEnabled": 1,
+                "iPositionX": 0.050,
+                "iPositionY": 0.244
+            },
+            "inferenceOverlay": {
+                "iEnabled": 1
+            },
+            "maskOverlay": {
+                "iEnabled": 1,
+                "privacyMask": [
+                    {
+                        "id": 0,
+                        "iMaskHeight": 0.77,
+                        "iMaskWidth": 0.213,
+                        "iPositionX": 0.53,
+                        "iPositionY": 0.380
+                    }
+                ]
+            }
+        }
+    )
     # 4. 存储配置
     storage_config: Dict[str, str] = field(
         default_factory=lambda: {
-            "sEnabledSlotName": "/dev/sda1"
+            "sEnabledSlotDevPath": "/dev/sda1"
         }
     )
     # 5. 存储状态
     storage_status: Dict[str, object] = field(
         default_factory=lambda: {
             "iRevision": 1,
-            "dSlots": [
+            "lSlots": [
                 {
                     "sDevPath": "/dev/sda1",
                     "sMountPath": "/mnt/sda1",
@@ -491,6 +541,8 @@ class BackendState:
                     }
                 }
             ],
+            "sCurrentEnabledSlotDevPath": "/dev/mmcblk0p1",
+            "sTargetEnabledSlotDevPath": "/dev/sda1",
             "sDataDirName": "DCIM"
         }
     )
@@ -499,7 +551,63 @@ class BackendState:
 state = BackendState()
 
 
+def init_mock_filesystem() -> None:
+    """初始化模拟文件系统"""
+    from datetime import datetime, timedelta
+    
+    # 为每个存储设备创建模拟文件
+    devices = ["/dev/sda1", "/dev/mmcblk0p1"]
+    
+    for device in devices:
+        state.mock_filesystems[device] = {}
+        
+        # 创建一些日期文件夹
+        today = datetime.now()
+        for days_ago in range(7):
+            date = today - timedelta(days=days_ago)
+            date_str = date.strftime("%Y-%m-%d")
+            folder_path = f"DCIM/{date_str}"
+            
+            # 添加文件夹
+            state.mock_filesystems[device][folder_path] = {
+                "name": date_str,
+                "type": "directory",
+                "mtime": date.strftime("%a, %d %b %Y %H:%M:%S GMT"),
+                "size": 0
+            }
+            
+            # 在每个日期文件夹中添加一些文件
+            for i in range(5):
+                # 视频文件
+                if i % 2 == 0:
+                    time_str = f"{10 + i:02d}-{30 + i:02d}-{15 + i:02d}"
+                    filename = f"{date_str} {time_str} video{i}.mp4"
+                    file_path = f"{folder_path}/{filename}"
+                    state.mock_filesystems[device][file_path] = {
+                        "name": filename,
+                        "type": "file",
+                        "mtime": date.replace(hour=10+i, minute=30+i).strftime("%a, %d %b %Y %H:%M:%S GMT"),
+                        "size": 15234567 + i * 1000000  # 约15MB
+                    }
+                # 图片文件
+                else:
+                    time_str = f"{10 + i:02d}-{30 + i:02d}-{15 + i:02d}"
+                    filename = f"{date_str} {time_str} image{i}.jpg"
+                    file_path = f"{folder_path}/{filename}"
+                    state.mock_filesystems[device][file_path] = {
+                        "name": filename,
+                        "type": "file",
+                        "mtime": date.replace(hour=10+i, minute=30+i).strftime("%a, %d %b %Y %H:%M:%S GMT"),
+                        "size": 2345678 + i * 100000  # 约2MB
+                    }
+
+
 def reset_state() -> None:
     global state
     new_state = BackendState()
     state.__dict__.update(new_state.__dict__)
+    init_mock_filesystem()
+
+
+# 初始化模拟文件系统
+init_mock_filesystem()

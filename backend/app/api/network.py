@@ -76,7 +76,7 @@ def delete_wifi(service: str, _: str = Depends(require_auth)):
     return {"status": 0, "message": "SSID not connected"}
 
 
-@router.get("/network/muticast", response_model=MulticastConfig)
+@router.get("/network/multicast", response_model=MulticastConfig)
 def get_multicast(_: str = Depends(require_auth)) -> MulticastConfig:
     return MulticastConfig(**state.multicast)
 

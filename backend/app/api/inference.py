@@ -112,7 +112,7 @@ def get_model_info(
         category="Object Detection",
         algorithm="YOLOV5",
         description="YOLOv5 目标检测模型",
-        classes=["person", "car", "bus", "truck"],
+        classes=["person", "car", "bus", "truck","adf","adf","dghdgh","qerqr","xcvbb"],
         metrics={"iou": 60, "confidence": 60, "topk": 100},
         author="Seeed Studio",
         size=1110,

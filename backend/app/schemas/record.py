@@ -64,7 +64,7 @@ class TTYConfig(BaseModel):
 
 
 class RecordRuleConfig(BaseModel):
-    sType: str  # 录制条件类型，对应下面的字段名
+    sCurrentSelected: str  # 录制条件类型，对应下面的字段名
     lInferenceSet: Optional[List[InferenceSetItem]] = None
     dTimer: Optional[TimerConfig] = None
     dGPIO: Optional[GPIOConfig] = None
@@ -73,7 +73,7 @@ class RecordRuleConfig(BaseModel):
 
 # 4. 存储配置 (Storage Configuration)
 class StorageConfig(BaseModel):
-    sEnabledSlotName: str  # 已启用插槽的设备路径，如果没有则为空
+    sEnabledSlotDevPath: str  # 已启用插槽的设备路径，如果没有则为空
 
 
 # 5. 存储状态 (Storage Status)
@@ -105,8 +105,10 @@ class StorageSlot(BaseModel):
 
 class StorageStatus(BaseModel):
     iRevision: int = Field(..., ge=0)  # 配置修订号，每次调用存储控制后 +1
-    dSlots: List[StorageSlot]  # 存储槽位列表
+    lSlots: List[StorageSlot]  # 存储槽位列表
     sDataDirName: str  # 数据目录名称
+    sCurrentEnabledSlotDevPath: str  # 当前已启用设备
+    sTargetEnabledSlotDevPath: str  # 目标已启用设备
 
 
 # 6. 存储控制 (Storage Control)
@@ -116,6 +118,7 @@ class SlotConfig(BaseModel):
 
 
 class StorageControl(BaseModel):
-    sAction: Literal["format", "free_up", "eject", "config", "relay", "unrelay"]  # 操作类型
-    sSlotName: str  # 插槽的设备路径
+    sAction: Literal["format", "free_up", "eject", "config", "relay", "relay_status", "unrelay", "remove_files_or_directories"]  # 操作类型
+    sSlotDevPath: str  # 插槽的设备路径
     dSlotConfig: Optional[SlotConfig] = None  # 可选，仅 "config" 操作需要
+    lFilesOrDirectoriesToRemove: Optional[List[str]] = None  # 可选，仅 "remove_files_or_directories" 操作需要

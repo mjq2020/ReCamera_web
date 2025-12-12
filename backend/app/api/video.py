@@ -22,6 +22,7 @@ from ..schemas.video import (
     OSDCharSettings,
     OSDInferenceSettings,
     OSDMaskSettings,
+    OSDConfig,
     StreamConfig,
     StreamUpdateRequest,
     WebRTCOffer,
@@ -213,6 +214,83 @@ def update_stream_config(stream_id: int, payload: StreamUpdateRequest, _: str = 
     stream = _get_stream(stream_id)
     stream["stream"] = payload.model_dump()
     return StreamConfig(**stream["stream"])
+
+
+@router.get("/osd/cfg", response_model=OSDConfig)
+def get_osd_config(_: str = Depends(require_auth)) -> OSDConfig:
+    """
+    获取视频流OSD绘制参数
+    """
+    if "osd_config" not in state.__dict__ or state.osd_config is None:
+        # 返回默认配置
+        return OSDConfig(**_get_default_osd_config())
+    return OSDConfig(**state.osd_config)
+
+
+@router.post("/osd/cfg", response_model=OSDConfig)
+def update_osd_config(payload: OSDConfig, _: str = Depends(require_auth)) -> OSDConfig:
+    """
+    配置OSD绘制参数
+    """
+    # 验证遮挡区域数量不超过6个
+    if len(payload.maskOverlay.privacyMask) > 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="遮挡区域最多只能配置6个"
+        )
+    
+    # 保存配置到状态
+    state.osd_config = payload.model_dump()
+    logger.info(f"OSD 配置已更新: {state.osd_config}")
+    
+    return OSDConfig(**state.osd_config)
+
+
+def _get_default_osd_config() -> Dict:
+    """
+    获取默认的 OSD 配置
+    """
+    return {
+        "attribute": {
+            "iOSDFontSize": 64,
+            "sOSDFrontColor": "fff799",
+            "sOSDFrontColorMode": 1
+        },
+        "channelNameOverlay": {
+            "iEnabled": 1,
+            "iPositionX": 0.528,
+            "iPositionY": 0.458,
+            "sChannelName": "reCamera 1126B"
+        },
+        "dateTimeOverlay": {
+            "iEnabled": 1,
+            "iDisplayWeekEnabled": 1,
+            "iPositionX": 0.05,
+            "iPositionY": 0.244,
+            "sDateStyle": "CHR-YYYY-MM-DD",
+            "sTimeStyle": "24hour"
+        },
+        "SNOverlay": {
+            "iEnabled": 1,
+            "iPositionX": 0.050,
+            "iPositionY": 0.244
+        },
+        "inferenceOverlay": {
+            "iEnabled": 1
+        },
+        "maskOverlay": {
+            "iEnabled": 1,
+            "privacyMask": [
+                {
+                    "id": 0,
+                    "iMaskHeight": 0.77,
+                    "iMaskWidth": 0.213,
+                    "iPositionX": 0.53,
+                    "iPositionY": 0.380
+                }
+            ]
+        }
+    }
 
 
 @router.post("/webrtc/offer/{stream_id}", response_model=WebRTCAnswer)
