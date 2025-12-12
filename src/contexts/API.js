@@ -1,19 +1,56 @@
 import axios from 'axios'
 import { urls } from './urls'
+import { toast } from '../components/base/Toast'
 
 const axiosInstance = axios.create(
     {
-        baseURL: "http://192.168.1.66:8000/cgi-bin/entry.cgi/",
+        baseURL: "http://192.168.66.48/cgi-bin/entry.cgi/",
+        // baseURL: "http://192.168.1.66:8000/cgi-bin/entry.cgi/",
         timeout: 10000,
         withCredentials: true,
         responseType: 'json',
         headers: {
             "Content-Type": 'application/json',
         },
-        params: {}
     }
-
 )
+axiosInstance.interceptors.request.use(config => {
+    config.headers.Cookie = `token=${localStorage.getItem('token')}`
+    console.log(config.baseURL, localStorage.baseURL)
+    console.log(config.url)
+    if (config.url.includes("/relay")) {
+        console.log(">>", config.baseURL)
+        config.baseURL = config.baseURL.replace("/cgi-bin/entry.cgi", "")
+        console.log("<<", config.baseURL)
+    }
+    return config
+})
+
+axiosInstance.interceptors.response.use(response => {
+
+    if (response.config.method != 'get') {
+        if (response.status === 200) {
+            const data = response.data
+            if ('code' in data) {
+                if (data.code === SUCCESS_CODE) {
+                    return response
+                } else {
+                    toast.error('请求失败: 错误码' + data.code + ' ' + data.message)
+                    return Promise.reject(data)
+                }
+
+            } else {
+                return response
+            }
+        } else {
+            toast.error('请求失败: 错误码' + response.status + ' ' + response.statusText)
+            return Promise.reject(response)
+        }
+    }
+    return response
+})
+
+
 
 class DeviceInfoAPI {
 
@@ -133,6 +170,45 @@ class DeviceInfoAPI {
         return axiosInstance.put(urls.systemPassword, data)
     }
 
+    // 开始上传固件
+    static startFirmwareUpload() {
+        return axiosInstance.post(urls.systemFirmwareUpgrade, null, {
+            params: {
+                'upload-type': 'resumable'
+            },
+            headers: {
+                'Content-Type': 'text/plain',
+                'Content-Length': '0'
+            }
+        })
+    }
+
+    // 上传固件分块
+    static uploadFirmwareChunk(fileId, chunk, start, end) {
+        return axiosInstance.post(urls.systemFirmwareUpgrade, chunk, {
+            params: {
+                id: fileId
+            },
+            headers: {
+                'Content-Type': 'text/plain',
+                'Content-Range': `bytes ${start}-${end}`
+            }
+        })
+    }
+
+    // 完成固件上传
+    static finishFirmwareUpload(fileId, md5sum) {
+        return axiosInstance.post(urls.systemFirmwareUpgrade, null, {
+            params: {
+                start: fileId,
+                md5sum: md5sum
+            },
+            headers: {
+                'Content-Type': 'text/plain'
+            }
+        })
+    }
+
 }
 
 class VideoAPI {
@@ -143,6 +219,16 @@ class VideoAPI {
 
     static putVideoEncode(streamId, data) {
         return axiosInstance.put(urls.videoEncode(streamId), data)
+    }
+    // OSD 配置
+    static getVideoOsdConfig() {
+        return axiosInstance.get(urls.videoOsdConfig)
+    }
+    static putVideoOsdConfig(data) {
+        return axiosInstance.put(urls.videoOsdConfig, data)
+    }
+    static postVideoOsdConfig(data) {
+        return axiosInstance.post(urls.videoOsdConfig, data)
     }
 
     // OSD 字符配置
@@ -289,6 +375,63 @@ class RecordAPI {
     static getStorageConfig() {
         return axiosInstance.get(urls.recordStorageConfig)
     }
+
+    // 设置存储配置
+    static setStorageConfig(data) {
+        return axiosInstance.post(urls.recordStorageConfig, data)
+    }
+
+    // 获取存储状态
+    static getStorageStatus() {
+        return axiosInstance.get(urls.recordStorageStatus)
+    }
+
+    // 设置存储状态
+    static setStorageStatus(data) {
+        return axiosInstance.post(urls.recordStorageStatus, data)
+    }
+
+    // 获取存储控制
+    static getStorageControl() {
+        return axiosInstance.get(urls.recordStorageControl)
+    }
+
+    // 设置存储控制
+    static setStorageControl(data) {
+        return axiosInstance.post(urls.recordStorageControl, data)
+    }
+
+    // 获取文件列表（通过中继）
+    static getFileList(relayUuid, path = '') {
+        const url = urls.recordRelay(relayUuid, path);
+        return axiosInstance.get(url);
+    }
+
+    // 获取文件URL（用于下载和预览）
+    static getFileUrl(relayUuid, filePath) {
+        const baseURL = axiosInstance.defaults.baseURL.replace("/cgi-bin/entry.cgi", "");
+        return `${baseURL}${urls.recordRelay(relayUuid, filePath)}`;
+    }
+
+    // 获取视频缩略图（第一帧）
+    static getVideoThumbnail(relayUuid, filePath) {
+        const url = urls.recordRelay(relayUuid, filePath);
+        return axiosInstance.get(url, {
+            headers: {
+                'Range': 'bytes=0-102400' // 获取前100KB用于缩略图
+            },
+            responseType: 'blob'
+        });
+    }
+
+    // 删除文件或文件夹
+    static deleteFiles(slotDevPath, filesToRemove) {
+        return axiosInstance.post(urls.recordStorageControl, {
+            sAction: 'remove_files_or_directories',
+            sSlotDevPath: slotDevPath,
+            lFilesOrDirectoriesToRemove: filesToRemove
+        });
+    }
 }
 
 class InferenceAPI {
@@ -399,4 +542,7 @@ class TerminalLogAPI {
 
 }
 
-export { DeviceInfoAPI, VideoAPI, RecordAPI, InferenceAPI, TerminalLogAPI }
+const SUCCESS_CODE = 0
+
+
+export { DeviceInfoAPI, VideoAPI, RecordAPI, InferenceAPI, TerminalLogAPI, SUCCESS_CODE }

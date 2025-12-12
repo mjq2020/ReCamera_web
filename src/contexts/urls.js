@@ -10,7 +10,7 @@ export const urls = {
     systemFactoryReset: "/system/factory-reset",
     systemPassword: "/system/password",
 
-    networkWlan: "/network/wlan",
+    networkWlan: "/network/lan",
     networkWiFi: "/network/wifi",
     networkWiFiList: "/network/wifi-list",
     networkMultiCast: "/network/multicast",
@@ -43,6 +43,7 @@ export const urls = {
     videoOsdInference: (streamId) => `/video/${streamId}/osd-inference`,
     videoOsdMask: (streamId) => `/video/${streamId}/osd-mask`,
     videoStream: (streamId) => `/video/${streamId}/stream`,
+    videoOsdConfig: "/osd/cfg",
 
     // Live Settings - Audio
     audio: (id) => `/audio/${id}`,
@@ -67,5 +68,6 @@ export const urls = {
     recordStorageConfig: "/vigil/storage/config",
     recordStorageStatus: "/vigil/storage/status",
     recordStorageControl: "/vigil/storage/control",
+    recordRelay: (relayUuid, path) => `/vigil/relay/${relayUuid}${path ? '/' + path : ''}`,
 
 };
