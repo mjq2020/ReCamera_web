@@ -17,6 +17,7 @@ app.add_middleware(
 
 app.include_router(system.router)
 app.include_router(network.router)
+app.include_router(network.download_router)  # 下载路由（没有前缀）
 app.include_router(video.router)
 app.include_router(audio.router)
 app.include_router(image.router)

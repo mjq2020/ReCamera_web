@@ -128,6 +128,14 @@ class BackendState:
     firmware_tokens: Dict[str, Dict] = field(default_factory=dict)
     # 固件上传状态管理
     firmware_uploads: Dict[str, Dict] = field(default_factory=dict)
+    # 恢复出厂设置确认token及过期时间
+    factory_reset_tokens: Dict[str, float] = field(default_factory=dict)
+    # 导出的配置文件路径
+    last_exported_config: str = ""
+    # 配置上传状态管理
+    config_uploads: Dict[str, Dict] = field(default_factory=dict)
+    # 最后上传的配置文件路径
+    last_uploaded_config: str = ""
     video_streams: Dict[int, Dict[str, Dict]] = field(
         default_factory=lambda: {
             0: {

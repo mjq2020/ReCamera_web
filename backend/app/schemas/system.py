@@ -67,5 +67,25 @@ class ResourceInfoResponse(BaseModel):
 
 
 class PasswordUpdateRequest(BaseModel):
+    sUserName: str = Field(..., min_length=1, max_length=64)
     sOldPassword: str = Field(..., min_length=64, max_length=64, pattern=r"^[0-9a-fA-F]{64}$")
     sNewPassword: str = Field(..., min_length=64, max_length=64, pattern=r"^[0-9a-fA-F]{64}$")
+
+
+class PasswordUpdateResponse(BaseModel):
+    code: int = Field(..., description="成功返回0，错误返回其他错误码")
+    message: str = Field(default="", description="可携带相关错误信息")
+
+
+class FactoryResetInitResponse(BaseModel):
+    code: int = Field(..., description="成功返回0，错误返回其他错误码")
+    sConfirmToken: str = Field(..., description="后端生成的确认token，有时效性")
+
+
+class FactoryResetConfirmRequest(BaseModel):
+    sConfirmToken: str = Field(..., min_length=1, description="第一阶段响应的确认码")
+
+
+class FactoryResetConfirmResponse(BaseModel):
+    code: int = Field(..., description="成功返回0，错误返回其他错误码")
+    message: str = Field(default="", description="可携带相关错误信息")

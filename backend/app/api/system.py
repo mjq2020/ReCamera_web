@@ -13,9 +13,13 @@ from typing import Optional
 from ..dependencies import require_auth
 from ..schemas.system import (
     DeviceInfoResponse,
+    FactoryResetConfirmRequest,
+    FactoryResetConfirmResponse,
+    FactoryResetInitResponse,
     LoginRequest,
     LoginResponse,
     PasswordUpdateRequest,
+    PasswordUpdateResponse,
     ResourceInfoResponse,
     SystemTimeResponse,
     SystemTimeUpdateRequest,
@@ -254,22 +258,127 @@ def firmware_network(payload: FirmwareNetworkConfirmRequest, _: str = Depends(re
     return {"status": 1, "message": "Update started"}
 
 
-@router.post("/system/reboot", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/system/reboot")
 def system_reboot(_: str = Depends(require_auth)) -> Response:
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    return {"code": 0, "message": "Rebooting..."}
 
 
-@router.post("/system/factory-reset", status_code=status.HTTP_204_NO_CONTENT)
-def system_factory_reset(_: str = Depends(require_auth)) -> Response:
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/system/factory-reset")
+async def system_factory_reset(
+    request: Request,
+    payload: Optional[FactoryResetConfirmRequest] = None,
+    _: str = Depends(require_auth)
+):
+    """
+    恢复出厂设置（两阶段确认）
+    - 第一阶段：不传参数，返回确认token
+    - 第二阶段：传入确认token，执行恢复出厂设置
+    """
+    # 尝试解析请求体
+    try:
+        body = await request.body()
+        if not body or body == b'':
+            # 第一阶段：生成确认token
+            token = secrets.token_urlsafe(16)
+            # 设置过期时间为5分钟后（300秒）
+            expire_time = datetime.now(tz=timezone.utc).timestamp() + 300
+            state.factory_reset_tokens[token] = expire_time
+            
+            return FactoryResetInitResponse(
+                code=0,
+                sConfirmToken=token
+            )
+        else:
+            # 尝试解析确认请求
+            import json
+            data = json.loads(body)
+            confirm_request = FactoryResetConfirmRequest(**data)
+            
+            # 第二阶段：验证token并执行
+            token = confirm_request.sConfirmToken
+            
+            # 检查token是否存在
+            if token not in state.factory_reset_tokens:
+                return FactoryResetConfirmResponse(
+                    code=1,
+                    message="无效的确认码"
+                )
+            
+            # 检查token是否过期
+            expire_time = state.factory_reset_tokens[token]
+            current_time = datetime.now(tz=timezone.utc).timestamp()
+            
+            if current_time > expire_time:
+                # 删除过期的token
+                del state.factory_reset_tokens[token]
+                return FactoryResetConfirmResponse(
+                    code=2,
+                    message="确认码已过期，请重新获取"
+                )
+            
+            # token有效，执行恢复出厂设置
+            # 删除已使用的token
+            del state.factory_reset_tokens[token]
+            
+            # 这里可以添加实际的恢复出厂设置逻辑
+            # 例如：重置所有配置、清除用户数据等
+            
+            return FactoryResetConfirmResponse(
+                code=0,
+                message="恢复出厂设置成功"
+            )
+    except Exception as e:
+        return FactoryResetConfirmResponse(
+            code=3,
+            message=f"请求处理失败: {str(e)}"
+        )
 
 
-@router.put("/system/password")
-def update_password(payload: PasswordUpdateRequest, user: str = Depends(require_auth)):
-    stored = state.passwords.get(user)
-    stored = "913b1ccfC0573A5D44Dc4EbdEcdAa8272Ff9e16bbA68eB79eea6416BcdFED127"
-    print(stored)
-    if stored is None or stored.lower() != payload.sOldPassword.lower():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Old password incorrect")
-    state.passwords[user] = payload.sNewPassword.lower()
-    return {"status": 1, "message": "Password updated"}
+@router.put("/system/password", response_model=PasswordUpdateResponse)
+def update_password(payload: PasswordUpdateRequest, user: str = Depends(require_auth)) -> PasswordUpdateResponse:
+    """
+    修改用户密码
+    
+    要求：
+    1. 密码为 SHA256 哈希值（64位十六进制字符串）
+    2. 验证旧密码是否正确
+    3. 更新为新密码
+    """
+    try:
+        # 验证用户名是否存在
+        if payload.sUserName not in state.passwords:
+            return PasswordUpdateResponse(
+                code=1,
+                message="用户不存在"
+            )
+        
+        # 获取存储的密码哈希值
+        stored_password = state.passwords.get(payload.sUserName)
+        
+        # 验证旧密码是否正确（不区分大小写比较，因为哈希值可能大小写不同）
+        if stored_password is None or stored_password.lower() != payload.sOldPassword.lower():
+            return PasswordUpdateResponse(
+                code=2,
+                message="旧密码错误"
+            )
+        
+        # 验证新密码与旧密码是否相同
+        if payload.sOldPassword.lower() == payload.sNewPassword.lower():
+            return PasswordUpdateResponse(
+                code=3,
+                message="新密码不能与旧密码相同"
+            )
+        
+        # 更新密码（统一转为小写存储）
+        state.passwords[payload.sUserName] = payload.sNewPassword.lower()
+        
+        return PasswordUpdateResponse(
+            code=0,
+            message="密码修改成功"
+        )
+        
+    except Exception as e:
+        return PasswordUpdateResponse(
+            code=99,
+            message=f"密码修改失败: {str(e)}"
+        )
