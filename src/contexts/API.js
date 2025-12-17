@@ -26,29 +26,67 @@ axiosInstance.interceptors.request.use(config => {
     return config
 })
 
-axiosInstance.interceptors.response.use(response => {
+axiosInstance.interceptors.response.use(
+    response => {
+        if (response.config.method != 'get') {
+            console.log(response.status)
+            if (response.status === 200) {
+                const data = response.data
+                if ('code' in data) {
+                    if (data.code === SUCCESS_CODE) {
+                        return response
+                    } else {
+                        toast.error('请求失败: 错误码' + data.code + ' ' + data.message)
+                        return Promise.reject(data)
+                    }
 
-    if (response.config.method != 'get') {
-        if (response.status === 200) {
-            const data = response.data
-            if ('code' in data) {
-                if (data.code === SUCCESS_CODE) {
-                    return response
                 } else {
-                    toast.error('请求失败: 错误码' + data.code + ' ' + data.message)
-                    return Promise.reject(data)
+                    return response
                 }
-
             } else {
-                return response
+                toast.error('请求失败: 错误码' + response.status + ' ' + response.statusText)
+                return Promise.reject(response)
             }
-        } else {
-            toast.error('请求失败: 错误码' + response.status + ' ' + response.statusText)
-            return Promise.reject(response)
         }
+        return response
+    },
+    error => {
+        if (error.response) {
+            const { status, data } = error.response;
+
+            // 根据不同状态码处理
+            switch (status) {
+                case 400:
+                    toast.error(data?.message || '请求参数错误');
+                    break;
+                case 401:
+                    toast.error('未授权，请重新登录');
+                    // 可以跳转到登录页
+                    // router.push('/login');
+                    break;
+                case 403:
+                    toast.error('拒绝访问');
+                    break;
+                case 404:
+                    toast.error('请求资源不存在');
+                    break;
+                case 500:
+                    toast.error('服务器内部错误');
+                    break;
+                default:
+                    toast.error(data?.message || `请求失败: ${status}`);
+            }
+        } else if (error.request) {
+            // 请求已发出但没有收到响应
+            toast.error('网络错误，请检查网络连接');
+        } else {
+            // 其他错误
+            toast.error('请求失败: ' + error.message);
+        }
+
+        return Promise.reject(error);
     }
-    return response
-})
+)
 
 
 
@@ -142,12 +180,56 @@ class DeviceInfoAPI {
     }
 
     static getConfig() {
-        axiosInstance.get(urls.configExport, { responseType: 'json' })
+        // 添加时间戳参数来绕过浏览器缓存
+        return axiosInstance.get(urls.configExport,
+
+            // {params: {
+            //     _t: Date.now()
+            // }}
+        )
     }
 
     static postConfig(data) {
         axiosInstance.post(urls.configUpload, data)
+    }
 
+    // 开始上传配置
+    static startConfigUpload() {
+        return axiosInstance.post(urls.configUpload, null, {
+            params: {
+                'upload-type': 'resumable'
+            },
+            headers: {
+                'Content-Type': 'text/plain',
+                'Content-Length': '0'
+            }
+        })
+    }
+
+    // 上传配置分块
+    static uploadConfigChunk(fileId, chunk, start, end) {
+        return axiosInstance.post(urls.configUpload, chunk, {
+            params: {
+                id: fileId
+            },
+            headers: {
+                'Content-Type': 'text/plain',
+                'Content-Range': `bytes ${start}-${end}`
+            }
+        })
+    }
+
+    // 完成配置上传
+    static finishConfigUpload(fileId, md5sum) {
+        return axiosInstance.post(urls.configUpload, null, {
+            params: {
+                start: fileId,
+                md5sum: md5sum
+            },
+            headers: {
+                'Content-Type': 'text/plain'
+            }
+        })
     }
 
     static postFirmware(data) {
@@ -162,8 +244,12 @@ class DeviceInfoAPI {
         return axiosInstance.post(urls.systemReboot)
     }
 
-    static postFactoryReset() {
-        return axiosInstance.post(urls.systemFactoryReset)
+    static postFactoryReset(data=null) {
+        if(data){
+            return axiosInstance.post(urls.systemFactoryReset, data)
+        }else{
+            return axiosInstance.post(urls.systemFactoryReset)
+        }
     }
 
     static putPassword(data) {

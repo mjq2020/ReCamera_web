@@ -3,7 +3,7 @@ import { DeviceInfoAPI } from '../../contexts/API';
 import { InfoGrid, InfoItem } from '../base/InfoDisplay';
 import './WiFi.css';
 import { Wifi, Eye, EyeOff } from 'lucide-react';
-import ipChecking from '../base/Checking';
+import { ipChecking, portChecking } from '../base/Checking';
 import toast from '../base/Toast';
 
 
@@ -139,14 +139,14 @@ function NetworkSetting() {
             );
         } catch (err) {
             console.error('断开连接失败:', err);
-            alert('断开连接失败: ' + err.message);
+            toast.error('断开连接失败: ' + err.message);
         }
     };
 
     // 处理连接 WiFi
     const handleConnect = async () => {
         if (!wifiPassword.trim()) {
-            alert('请输入密码');
+            toast.error('请输入密码');
             return;
         }
 
@@ -174,13 +174,11 @@ function NetworkSetting() {
                     setWifiPassword('');
                     setSelectedWifi(null);
                 } else {
-                    console.error("连接失败")
-                    alert("连接失败：" + response.data.message)
+                    toast.error("连接失败：" + response.data.message)
                 }
             }
         } catch (err) {
-            console.error('连接失败:', err);
-            alert('连接失败: ' + err.message);
+            toast.error('连接失败: ' + err.message);
         } finally {
             setConnecting(false);
         }

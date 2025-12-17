@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { DeviceInfoAPI } from '../../contexts/API'
 import './WiFi.css'
 import { Eye, EyeOff } from 'lucide-react';
-import CryptoJS from 'crypto-js';
 import { toast } from '../base/Toast';
+import { ipChecking, portChecking } from '../base/Checking';
 
 
 // 连接设置组件
@@ -27,8 +27,7 @@ function LinkSetting() {
                     setHttpOn(response.data?.sEnable)
                 }
             } catch (err) {
-                console.error(err);
-                toast.error(err);
+                toast.error(err?.message || '获取 HTTP API 设置失败');
             }
         };
         request();
@@ -45,8 +44,7 @@ function LinkSetting() {
                     setFtpOn(response.data?.sEnable)
                 }
             } catch (err) {
-                console.error(err);
-                toast.error(err);
+                toast.error(err?.message || '获取 FTP 设置失败');
             }
         };
         request();
@@ -63,8 +61,7 @@ function LinkSetting() {
                     setMulticastOn(response.data?.sEnable)
                 }
             } catch (err) {
-                console.error(err);
-                toast.error(err);
+                toast.error(err?.message || '获取组播设置失败');
             }
         };
         request();
@@ -108,17 +105,14 @@ function LinkSetting() {
     const sendHttpConfig = (data) => {
         const request = async () => {
             try {
-                const response = await DeviceInfoAPI.postWebSetting(data);
-                console.log(data)
-                if (response.status == 200) {
-                    console.log("success");
-                } else {
-                    console.error("失败");
-                    toast.error('设置失败')
+                if (!portChecking(data.sApiPort)) {
+                    return;
                 }
+                const newData = { ...data, sEnable: httpOn }
+                await DeviceInfoAPI.postWebSetting(newData);
+                toast.success('HTTP API设置成功');
             } catch (err) {
-                console.error(err);
-                toast.error(err)
+                toast.error(err?.message || 'HTTP API 设置失败')
             }
         }
         request();
@@ -126,22 +120,14 @@ function LinkSetting() {
     const sendFtpConfig = (data) => {
         const request = async () => {
             try {
-                // 对密码进行 SHA256 哈希
-                const hashedData = {
-                    ...data,
-                    sFtpPassword: CryptoJS.SHA256(data.sFtpPassword).toString()
-                };
-
-                console.log('原始数据:', data);
-                console.log('哈希后的数据:', hashedData);
-
-                const response = await DeviceInfoAPI.postFtpSetting(hashedData);
-                if (response.status == 200) {
-                    toast.success("设置成功")
+                if (!portChecking(data.sFtpPort)) {
+                    return;
                 }
+                const newData = { ...data, sEnable: ftpOn }
+                await DeviceInfoAPI.postFtpSetting(newData);
+                toast.success('FTP设置成功');
             } catch (err) {
-                console.error(err);
-                toast.error('设置失败: ' + err.message);
+                toast.error(err?.message || 'FTP 设置失败');
             }
         }
         request();
@@ -150,8 +136,15 @@ function LinkSetting() {
     const sendMulticastConfig = (data) => {
         const request = async () => {
             try {
-                await DeviceInfoAPI.postMutiCast(data);
-            } catch (err) { }
+                if (!ipChecking(data.sMulticastAddress) || !portChecking(data.sMulticastPort)) {
+                    return;
+                }
+                const newData = { ...data, sEnable: multicastOn }
+                await DeviceInfoAPI.postMutiCast(newData);
+                toast.success('组播设置成功');
+            } catch (err) {
+                toast.error(err?.message || '组播设置失败');
+            }
         }
         request();
     }
@@ -284,19 +277,37 @@ function LinkSetting() {
             await DeviceInfoAPI.postWebSetting(newData);
             setHttpapiInfo(newData);
             setHttpOn(!httpOn);
-        } catch (err) { }
+        } catch (err) {
+            console.error(err);
+            toast.error(err?.message || 'HTTP API 开关切换失败');
+        }
 
     };
-    const ftpSwitch = () => {
-        setFtpOn(!ftpOn)
+    const ftpSwitch = async () => {
+        if (!ftpOn) {
+            setFtpOn(!ftpOn);
+            return;
+        }
+        const newData = { ...ftpInfo, sEnable: !ftpOn }
+        try {
+            await DeviceInfoAPI.postFtpSetting(newData);
+            setFtpInfo(newData);
+            setFtpOn(!ftpOn);
+        } catch (err) { }
     };
     const multicastSwitch = async () => {
+        if (!multicastOn) {
+            setMulticastOn(!multicastOn);
+            return;
+        }
         const newData = { ...multicastInfo, sEnable: !multicastOn }
         try {
             await DeviceInfoAPI.postMutiCast(newData);
             setMulticastInfo(newData);
             setMulticastOn(!multicastOn);
-        } catch (err) { }
+        } catch (err) {
+            toast.error(err?.message || '组播开关切换失败');
+        }
     };
 
     return (
