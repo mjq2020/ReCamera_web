@@ -131,7 +131,7 @@ class BackendState:
     # 恢复出厂设置确认token及过期时间
     factory_reset_tokens: Dict[str, float] = field(default_factory=dict)
     # 导出的配置文件路径
-    last_exported_config: str = ""
+    last_exported_config: str = "/home/dq/github/RC2Web/backend/config.tar"
     # 配置上传状态管理
     config_uploads: Dict[str, Dict] = field(default_factory=dict)
     # 最后上传的配置文件路径

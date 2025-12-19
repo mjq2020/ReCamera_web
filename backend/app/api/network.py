@@ -138,36 +138,36 @@ def export_config(response: Response, _: str = Depends(require_auth)):
         temp_dir.mkdir(exist_ok=True)
         
         # 创建配置 tar 文件
-        config_tar_path = temp_dir / "config.tar"
+        config_tar_path = "/home/dq/github/RC2Web/backend/config.tar"
         
         # 创建一个模拟的配置 tar 文件
         # 实际应用中，这里应该收集所有配置文件并打包
-        with tarfile.open(config_tar_path, "w") as tar:
-            # 添加一些模拟的配置数据
-            config_data = {
-                "network": state.network_wlan,
-                "wifi": state.wifi_status,
-                "http_setting": state.http_setting,
-                "ftp_setting": state.ftp_setting,
-                "multicast": state.multicast,
-                "device_info": state.device_info,
-            }
+        # with tarfile.open(config_tar_path, "w") as tar:
+        #     # 添加一些模拟的配置数据
+        #     config_data = {
+        #         "network": state.network_wlan,
+        #         "wifi": state.wifi_status,
+        #         "http_setting": state.http_setting,
+        #         "ftp_setting": state.ftp_setting,
+        #         "multicast": state.multicast,
+        #         "device_info": state.device_info,
+        #     }
             
-            # 将配置转换为 JSON 并添加到 tar 文件中
-            import json
-            config_json = json.dumps(config_data, indent=2).encode('utf-8')
+        #     # 将配置转换为 JSON 并添加到 tar 文件中
+        #     import json
+        #     config_json = json.dumps(config_data, indent=2).encode('utf-8')
             
-            # 创建一个内存中的文件对象
-            from io import BytesIO
-            config_file = BytesIO(config_json)
+        #     # 创建一个内存中的文件对象
+        #     from io import BytesIO
+        #     config_file = BytesIO(config_json)
             
-            # 创建 tarinfo 对象
-            tarinfo = tarfile.TarInfo(name="config.json")
-            tarinfo.size = len(config_json)
+        #     # 创建 tarinfo 对象
+        #     tarinfo = tarfile.TarInfo(name="config.json")
+        #     tarinfo.size = len(config_json)
             
-            # 添加到 tar 文件
-            config_file.seek(0)
-            tar.addfile(tarinfo, config_file)
+        #     # 添加到 tar 文件
+        #     config_file.seek(0)
+        #     tar.addfile(tarinfo, config_file)
         
         # 保存到状态中，以便下载端点可以访问
         state.last_exported_config = str(config_tar_path)
