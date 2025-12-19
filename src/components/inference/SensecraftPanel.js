@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { SensecraftAPI } from "../../contexts/API";
-import { Cloud, Upload, RefreshCw, Download, CheckCircle, XCircle, Clock, LogIn, User } from 'lucide-react';
+import { Cloud, Upload, RefreshCw, Download, CheckCircle, XCircle, Clock, LogIn, User, Trash2 } from 'lucide-react';
 import toast from '../base/Toast';
 import './Inference.css';
 
@@ -16,12 +16,12 @@ export default function SensecraftPanel({ onModelConverted }) {
     const [converting, setConverting] = useState(false);
     const [selectedOnnxFile, setSelectedOnnxFile] = useState(null);
     const [selectedDatasetFile, setSelectedDatasetFile] = useState(null);
-    
+
     // 任务状态
     const [currentTaskId, setCurrentTaskId] = useState(null);
     const [taskStatus, setTaskStatus] = useState(null);
     const [taskProgress, setTaskProgress] = useState(0);
-    
+
     // 模型列表
     const [modelList, setModelList] = useState([]);
     const [loadingList, setLoadingList] = useState(false);
@@ -33,18 +33,19 @@ export default function SensecraftPanel({ onModelConverted }) {
     useEffect(() => {
         const savedToken = localStorage.getItem('sensecraft_token');
         const savedUserId = localStorage.getItem('sensecraft_user_id');
-        
+
         if (savedToken && savedUserId) {
             setToken(savedToken);
             setUserId(savedUserId);
             setIsAuthenticated(true);
+            loadModelList(savedUserId);
         }
 
         // 监听来自授权窗口的消息
         const handleMessage = async (event) => {
             // 安全检查：确保消息来自我们自己的域名（回调页面）
             const currentOrigin = window.location.origin;
-            
+
             // 允许来自当前域名或 sensecraft.seeed.cc 的消息
             if (event.origin !== currentOrigin && !event.origin.includes('sensecraft.seeed.cc')) {
                 console.log('忽略来自未知源的消息:', event.origin);
@@ -83,25 +84,21 @@ export default function SensecraftPanel({ onModelConverted }) {
     const handleAuthToken = async (authToken) => {
         try {
             const response = await SensecraftAPI.parseToken(authToken);
-            
-            if (response.data.code === 0) {
-                const { user_id, token: validToken } = response.data.data;
-                
-                setToken(validToken);
-                setUserId(user_id);
-                setIsAuthenticated(true);
-                
-                // 保存到本地存储
-                localStorage.setItem('sensecraft_token', validToken);
-                localStorage.setItem('sensecraft_user_id', user_id);
-                
-                toast.success('Sensecraft 授权成功');
-                
-                // 加载模型列表
-                loadModelList(user_id);
-            } else {
-                toast.error('Token 解析失败');
-            }
+            const { user_id, token: validToken } = response.data.result;
+
+            setToken(validToken);
+            setUserId(user_id);
+            setIsAuthenticated(true);
+
+            // 保存到本地存储
+            localStorage.setItem('sensecraft_token', validToken);
+            localStorage.setItem('sensecraft_user_id', user_id);
+
+            toast.success('Sensecraft 授权成功');
+
+            // 加载模型列表
+            loadModelList(user_id);
+
         } catch (error) {
             console.error('解析 token 失败:', error);
             toast.error('授权失败，请重试');
@@ -115,15 +112,15 @@ export default function SensecraftPanel({ onModelConverted }) {
         const host = window.location.host;
         const callbackUrl = `${protocol}//${host}/sensecraft-callback.html`;
         const encodedCallbackUrl = encodeURIComponent(callbackUrl);
-        
+
         const authUrl = `${SENSECRAFT_AUTH_URL}?client_id=seeed_recamera&response_type=token&scop=profile&redirec_url=${encodedCallbackUrl}`;
-        
+
         // 打开新窗口进行授权
         const width = 600;
         const height = 700;
         const left = (window.screen.width - width) / 2;
         const top = (window.screen.height - height) / 2;
-        
+
         const authWindow = window.open(
             authUrl,
             'Sensecraft Authorization',
@@ -145,21 +142,21 @@ export default function SensecraftPanel({ onModelConverted }) {
         setToken(null);
         setUserId(null);
         setModelList([]);
-        
+
         localStorage.removeItem('sensecraft_token');
         localStorage.removeItem('sensecraft_user_id');
-        
+
         toast.success('已退出 Sensecraft');
     };
 
     // 加载模型列表
     const loadModelList = async (uid = userId) => {
         if (!uid) return;
-        
+
         try {
             setLoadingList(true);
             const response = await SensecraftAPI.getModelList(uid, 1, 20);
-            
+
             if (response.data.code === 0) {
                 setModelList(response.data.data.records || []);
             }
@@ -180,26 +177,28 @@ export default function SensecraftPanel({ onModelConverted }) {
 
         try {
             setConverting(true);
-            
+
             const formData = new FormData();
             formData.append('user_id', userId);
             formData.append('framework_type', 9);
             formData.append('device_type', 40);
             formData.append('file', selectedOnnxFile);
-            
+            // 添加文件名
+            formData.append('prompt', selectedOnnxFile.name);
+
             if (selectedDatasetFile) {
                 formData.append('dataset_file', selectedDatasetFile);
             }
 
             const response = await SensecraftAPI.createTask(formData);
-            
+
             if (response.data.code === 0) {
                 const modelId = response.data.data.model_id;
                 setCurrentTaskId(modelId);
                 setTaskStatus('init');
-                
+
                 toast.success('任务创建成功，开始转换...');
-                
+
                 // 开始轮询状态
                 startPollingStatus(modelId);
             } else {
@@ -224,7 +223,7 @@ export default function SensecraftPanel({ onModelConverted }) {
         pollTimerRef.current = setInterval(async () => {
             try {
                 const response = await SensecraftAPI.getTaskStatus(userId, modelId);
-                
+
                 if (response.data.code === 0) {
                     const status = response.data.data.status;
                     setTaskStatus(status);
@@ -236,10 +235,10 @@ export default function SensecraftPanel({ onModelConverted }) {
                         setTaskProgress(100);
                         clearInterval(pollTimerRef.current);
                         toast.success('模型转换完成！');
-                        
+
                         // 刷新模型列表
                         loadModelList();
-                        
+
                         // 通知父组件模型已转换
                         if (onModelConverted) {
                             onModelConverted();
@@ -267,8 +266,19 @@ export default function SensecraftPanel({ onModelConverted }) {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         toast.success('开始下载模型');
+    };
+
+    const handleDeleteModel = async (modelId) => {
+        try {
+            await SensecraftAPI.deleteModel(userId, modelId);
+            toast.success('模型删除成功');
+            loadModelList();
+
+        } catch (error) {
+            toast.error('删除模型失败');
+        }
     };
 
     // 获取状态图标和文本
@@ -279,9 +289,10 @@ export default function SensecraftPanel({ onModelConverted }) {
             return { icon: <XCircle size={16} color="#dc2626" />, text: '失败', color: '#dc2626' };
         } else if (status === 'init') {
             return { icon: <Clock size={16} color="#f59e0b" />, text: '初始化', color: '#f59e0b' };
-        } else if (!isNaN(status)) {
-            return { icon: <RefreshCw size={16} color="#3b82f6" />, text: `${status}%`, color: '#3b82f6' };
         }
+        //  else if (!isNaN(status)) {
+        //     return { icon: <RefreshCw size={16} color="#3b82f6" />, text: `${status}%`, color: '#3b82f6' };
+        // }
         return { icon: <Clock size={16} color="#64748b" />, text: '未知', color: '#64748b' };
     };
 
@@ -306,9 +317,9 @@ export default function SensecraftPanel({ onModelConverted }) {
                     <Cloud size={20} color="#3b82f6" />
                     <div>
                         <h3>Sensecraft 模型转换</h3>
-                        <p style={{ 
-                            margin: '4px 0 0 0', 
-                            fontSize: '13px', 
+                        <p style={{
+                            margin: '4px 0 0 0',
+                            fontSize: '13px',
                             color: 'var(--text-secondary)',
                             fontWeight: 'normal'
                         }}>
@@ -316,7 +327,7 @@ export default function SensecraftPanel({ onModelConverted }) {
                         </p>
                     </div>
                 </div>
-                
+
                 {/* 登录状态 */}
                 {isAuthenticated ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -377,7 +388,7 @@ export default function SensecraftPanel({ onModelConverted }) {
                             <h4 style={{ marginBottom: '16px', fontSize: '15px', fontWeight: '600' }}>
                                 创建转换任务
                             </h4>
-                            
+
                             <div className="form-grid">
                                 {/* ONNX 模型文件 */}
                                 <div className="form-group">
@@ -420,7 +431,7 @@ export default function SensecraftPanel({ onModelConverted }) {
                                 <button
                                     onClick={handleCreateTask}
                                     className="btn btn-primary"
-                                    disabled={converting || !selectedOnnxFile || taskStatus === 'init' || (!isNaN(taskStatus) && taskStatus !== 'done')}
+                                    disabled={converting || !selectedOnnxFile || taskStatus === 'init'}
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',
@@ -461,7 +472,7 @@ export default function SensecraftPanel({ onModelConverted }) {
                                             </span>
                                         </div>
                                     </div>
-                                    
+
                                     {/* 进度条 */}
                                     {taskStatus !== 'error' && (
                                         <div style={{
@@ -479,7 +490,7 @@ export default function SensecraftPanel({ onModelConverted }) {
                                             }} />
                                         </div>
                                     )}
-                                    
+
                                     <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '8px' }}>
                                         任务 ID: {currentTaskId}
                                     </p>
@@ -529,7 +540,7 @@ export default function SensecraftPanel({ onModelConverted }) {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     {modelList.map((model, index) => {
                                         const statusDisplay = getStatusDisplay(model.status);
-                                        
+
                                         return (
                                             <div
                                                 key={index}
@@ -546,7 +557,7 @@ export default function SensecraftPanel({ onModelConverted }) {
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                                                         <span style={{ fontSize: '14px', fontWeight: '500', fontFamily: 'monospace' }}>
-                                                            {model.model_id}
+                                                            {model.prompt}
                                                         </span>
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                             {statusDisplay.icon}
@@ -555,13 +566,14 @@ export default function SensecraftPanel({ onModelConverted }) {
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    
+
                                                     <div style={{ display: 'flex', gap: '20px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                                                         <span>大小: {formatFileSize(model.model_size)}</span>
                                                         <span>进度: {model.progress}%</span>
                                                         <span>创建时间: {formatTime(model.created_at)}</span>
+                                                        <span>任务ID: {model.model_id}</span>
                                                     </div>
-                                                    
+
                                                     {model.error_message && (
                                                         <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '4px' }}>
                                                             错误: {model.error_message}
@@ -584,6 +596,23 @@ export default function SensecraftPanel({ onModelConverted }) {
                                                     >
                                                         <Download size={14} />
                                                         下载
+                                                    </button>
+                                                )}
+                                                {model.status === 'done' && (
+                                                    <button
+                                                        onClick={() => handleDeleteModel(model.model_id)}
+                                                        className="btn btn-danger"
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            gap: '8px',
+                                                            fontSize: '13px',
+                                                            padding: '6px 12px',
+                                                            marginLeft: '16px'
+                                                        }}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                        删除
                                                     </button>
                                                 )}
                                             </div>

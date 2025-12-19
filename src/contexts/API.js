@@ -15,12 +15,10 @@ const axiosInstance = axios.create(
 )
 axiosInstance.interceptors.request.use(config => {
     config.headers.Cookie = `token=${localStorage.getItem('token')}`
-    console.log(config.baseURL, localStorage.baseURL)
-    console.log(config.url)
     if (config.url.includes("/relay")) {
-        console.log(">>", config.baseURL)
         config.baseURL = config.baseURL.replace("/cgi-bin/entry.cgi", "")
-        console.log("<<", config.baseURL)
+    } else if (config.url.includes("/api")) {
+        config.baseURL = config.baseURL.replace("/cgi-bin/entry.cgi", "")
     }
     return config
 })
@@ -32,7 +30,7 @@ axiosInstance.interceptors.response.use(
             if (response.status === 200) {
                 const data = response.data
                 if ('code' in data) {
-                    if (data.code === SUCCESS_CODE) {
+                    if (data.code === SUCCESS_CODE || data.code === 200) {
                         return response
                     } else {
                         toast.error('请求失败: 错误码' + data.code + ' ' + data.message)
@@ -630,7 +628,7 @@ class TerminalLogAPI {
 class SensecraftAPI {
     // 解析 token 获取 user_id
     static parseToken(token) {
-        return axiosInstance.post(urls.sensecraftParseToken, { token })
+        return axiosInstance.post(urls.sensecraftParseToken, { headers: { Authorization: token } })
     }
 
     // 创建模型转换任务
@@ -669,7 +667,16 @@ class SensecraftAPI {
     // 下载模型
     static downloadModel(userId, modelId) {
         const baseURL = axiosInstance.defaults.baseURL;
-        return `${baseURL}${urls.sensecraftDownloadModel}?user_id=${userId}&model_id=${modelId}`;
+        return `${baseURL.replace("/cgi-bin/entry.cgi", "")}${urls.sensecraftDownloadModel}?user_id=${userId}&model_id=${modelId}`;
+    }
+
+    static deleteModel(userId, modelId) {
+        return axiosInstance.get(urls.sensecraftDeleteModel, {
+            params: {
+                user_id: userId,
+                model_id: modelId
+            }
+        })
     }
 }
 

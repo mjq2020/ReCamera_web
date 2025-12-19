@@ -71,9 +71,10 @@ export const urls = {
     recordRelay: (relayUuid, path) => `/vigil/relay/${relayUuid}${path ? '/' + path : ''}`,
 
     // Sensecraft 第三方平台
-    sensecraftParseToken: "/sensecraft/parse-token",
-    sensecraftCreateTask: "/sensecraft/create-task",
-    sensecraftTaskStatus: "/sensecraft/task-status",
-    sensecraftModelList: "/sensecraft/model-list",
-    sensecraftDownloadModel: "/sensecraft/download-model",
+    sensecraftParseToken: "/api/v1/user/login_token",
+    sensecraftCreateTask: "/v1/api/create_task",
+    sensecraftTaskStatus: "/v1/api/train_status",
+    sensecraftModelList: "/v1/api/get_training_records",
+    sensecraftDownloadModel: "/v1/api/get_model",
+    sensecraftDeleteModel: "/v1/api/del_model",
 };
