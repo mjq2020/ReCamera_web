@@ -4,6 +4,7 @@ import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { WebglAddon } from '@xterm/addon-webgl';
+import { urls } from '../../contexts/urls';
 import '@xterm/xterm/css/xterm.css';
 import './Terminal.css';
 
@@ -51,7 +52,8 @@ const XtermTtydClient = () => {
   const [enterReconnect, setEnterReconnect] = useState(true);
 
   // ttyd WebSocket 地址
-  const TTYD_URL = 'ws://192.168.1.66:7681/ws';
+  // const TTYD_URL = 'ws://192.168.1.66:7681/ws';
+  const TTYD_URL = urls.wsSystemTerminal;
 
   // 写入数据到终端（带流量控制）
   const writeData = useCallback((data) => {

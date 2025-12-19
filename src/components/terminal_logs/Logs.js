@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { Terminal, Download, Filter, X } from 'lucide-react';
+import { urls } from '../../contexts/urls';
 import './Logs.css';
 
 // 优化日志条目组件，避免不必要的重新渲染
@@ -33,7 +34,7 @@ export default function SystemLogViewer() {
     const reconnectTimeoutRef = useRef(null);
     const reconnectAttemptsRef = useRef(0);
 
-    const WS_URL = "ws://192.168.1.66:8000/cgi-bin/entry.cgi/ws/system/logs";
+    const WS_URL = urls.wsSystemLogs;
     const MAX_RECONNECT_ATTEMPTS = 5;
     const RECONNECT_DELAY = 3000;
     const MAX_LOG_ENTRIES = 999999; // 最大保存日志条数，超过自动删除旧日志
@@ -70,24 +71,25 @@ export default function SystemLogViewer() {
             ws.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    
+
                     // 检查是否为数组（初始历史日志）
                     if (Array.isArray(data)) {
                         // 初次连接，接收历史日志列表
                         const historicalLogs = data.map((log, index) => ({
                             id: Date.now() + index,
                             data: log.sData || '',
-                            timestamp: log.sTimestamp || new Date().toISOString(),
+                            timestamp: new Date(Number(log.sTimestamp) * 1000).toISOString() || '',
                             level: log.sLevel || 'INFO',
                         }));
-                        
+                        console.log(historicalLogs)
+
                         setLogs(historicalLogs);
                     } else {
                         // 增量更新，接收单条日志
                         const newLog = {
                             id: Date.now() + Math.random(),
                             data: data.sData || '',
-                            timestamp: data.sTimestamp || new Date().toISOString(),
+                            timestamp: new Date(Number(data.sTimestamp) * 1000).toISOString() || '',
                             level: data.sLevel || 'INFO',
                         };
 

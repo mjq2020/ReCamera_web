@@ -23,8 +23,8 @@ export const urls = {
     configUpload: "/config/upload",
 
     // log and Terminal
-    wsTerminal: "/ws/system/terminal",
-    wsLogs: "/ws/system/wslogs",
+    wsSystemTerminal: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/system/terminal",
+    wsSystemLogs: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/system/logs",
     wsTtyd: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/",
 
     // AI inference
@@ -70,4 +70,10 @@ export const urls = {
     recordStorageControl: "/vigil/storage/control",
     recordRelay: (relayUuid, path) => `/vigil/relay/${relayUuid}${path ? '/' + path : ''}`,
 
+    // Sensecraft 第三方平台
+    sensecraftParseToken: "/sensecraft/parse-token",
+    sensecraftCreateTask: "/sensecraft/create-task",
+    sensecraftTaskStatus: "/sensecraft/task-status",
+    sensecraftModelList: "/sensecraft/model-list",
+    sensecraftDownloadModel: "/sensecraft/download-model",
 };
