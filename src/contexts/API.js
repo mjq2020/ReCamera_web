@@ -4,8 +4,7 @@ import { toast } from '../components/base/Toast'
 
 const axiosInstance = axios.create(
     {
-        baseURL: "http://192.168.66.48/cgi-bin/entry.cgi/",
-        // baseURL: "http://192.168.1.66:8000/cgi-bin/entry.cgi/",
+        baseURL: "http://" + window.location.host.replace("3000", "8000") + "/cgi-bin/entry.cgi/",
         timeout: 10000,
         withCredentials: true,
         responseType: 'json',
@@ -244,10 +243,10 @@ class DeviceInfoAPI {
         return axiosInstance.post(urls.systemReboot)
     }
 
-    static postFactoryReset(data=null) {
-        if(data){
+    static postFactoryReset(data = null) {
+        if (data) {
             return axiosInstance.post(urls.systemFactoryReset, data)
-        }else{
+        } else {
             return axiosInstance.post(urls.systemFactoryReset)
         }
     }
@@ -628,7 +627,53 @@ class TerminalLogAPI {
 
 }
 
+class SensecraftAPI {
+    // 解析 token 获取 user_id
+    static parseToken(token) {
+        return axiosInstance.post(urls.sensecraftParseToken, { token })
+    }
+
+    // 创建模型转换任务
+    static createTask(formData) {
+        return axiosInstance.post(urls.sensecraftCreateTask, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            },
+            timeout: 60000 // 上传可能需要更长时间
+        })
+    }
+
+    // 获取任务状态
+    static getTaskStatus(userId, modelId) {
+        return axiosInstance.get(urls.sensecraftTaskStatus, {
+            params: {
+                user_id: userId,
+                model_id: modelId
+            }
+        })
+    }
+
+    // 获取模型列表
+    static getModelList(userId, page = 1, size = 10) {
+        return axiosInstance.get(urls.sensecraftModelList, {
+            params: {
+                user_id: userId,
+                framework_type: 9,
+                device_type: 40,
+                page,
+                size
+            }
+        })
+    }
+
+    // 下载模型
+    static downloadModel(userId, modelId) {
+        const baseURL = axiosInstance.defaults.baseURL;
+        return `${baseURL}${urls.sensecraftDownloadModel}?user_id=${userId}&model_id=${modelId}`;
+    }
+}
+
 const SUCCESS_CODE = 0
 
 
-export { DeviceInfoAPI, VideoAPI, RecordAPI, InferenceAPI, TerminalLogAPI, SUCCESS_CODE }
+export { DeviceInfoAPI, VideoAPI, RecordAPI, InferenceAPI, TerminalLogAPI, SensecraftAPI, SUCCESS_CODE }
