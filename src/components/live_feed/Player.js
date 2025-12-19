@@ -1,25 +1,16 @@
-import React, { useRef, useEffect, useState } from "react";
-import axios from "axios";
+import React, { useRef, useEffect, useState,useCallback } from "react";
 import OSDOverlay from "./OSDOverlay";
 import "./LivePage.css";
 
-const axiosInstance = axios.create({
-    baseURL: "http://192.168.1.66:8000/cgi-bin/entry.cgi/",
-    timeout: 10000,
-    withCredentials: true,
-    headers: {
-        "Content-Type": "application/json",
-        "Cookie": "token=hWLp6dsjRMLIAwby0WQD136tR31utOYIWUvcBOoawn4"
-    }
-});
-
 const MAX_MASK_COUNT = 6; // 最多支持6个遮盖区域
+const WS_URL = "ws://192.168.66.48:1984/api/ws?src=my_cam";
 
 export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainStream, osdSettings, isOsdEditMode, onOsdUpdate }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const containerRef = useRef(null);
     const pcRef = useRef(null);
+    const wsRef = useRef(null);
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -43,58 +34,139 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
             setIsLoading(true);
             setError(null);
 
-            // 根据 mainStream 参数确定使用主码流（0）还是子码流（1）
-            const streamId = mainStream ? 0 : 1;
             const streamType = mainStream ? "主码流" : "子码流";
-            console.log(`准备连接 ${streamType}（stream_id: ${streamId}）`);
+            console.log(`准备连接 ${streamType}`);
 
-            // 创建 RTCPeerConnection（局域网直连，不使用 STUN 服务器）
-            const pc = new RTCPeerConnection({
-                iceServers: []
-            });
+            // 创建 WebSocket 连接
+            const ws = new WebSocket(WS_URL);
+            wsRef.current = ws;
 
-            pcRef.current = pc;
+            ws.onopen = async () => {
+                console.log("WebSocket 连接已建立");
 
-            pc.ontrack = (event) => {
-                console.log(`收到远程视频流（${streamType}）`, event.streams);
-                if (videoRef.current && event.streams[0]) {
-                    videoRef.current.srcObject = event.streams[0];
+                // 创建 RTCPeerConnection
+                const pc = new RTCPeerConnection({
+                    iceServers: [
+                        { urls: ['stun:stun.cloudflare.com:3478', 'stun:stun.l.google.com:19302'] }
+                    ]
+                });
+
+                pcRef.current = pc;
+
+                // 处理接收到的远程媒体流
+                pc.ontrack = (event) => {
+                    console.log(`收到远程视频流（${streamType}）`, event.streams);
+                    if (videoRef.current && event.streams[0]) {
+                        videoRef.current.srcObject = event.streams[0];
+                        videoRef.current.play().catch(err => {
+                            console.warn("自动播放失败:", err);
+                        });
+                    }
+                };
+
+                // 监听连接状态变化
+                pc.onconnectionstatechange = () => {
+                    console.log(`连接状态（${streamType}）:`, pc.connectionState);
+                    if (pc.connectionState === "connected") {
+                        setIsConnected(true);
+                        setIsLoading(false);
+                    } else if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+                        setError(`WebRTC连接失败（${streamType}）`);
+                        setIsLoading(false);
+                        setIsConnected(false);
+                    }
+                };
+
+                // 监听 ICE 连接状态
+                pc.oniceconnectionstatechange = () => {
+                    console.log(`ICE连接状态（${streamType}）:`, pc.iceConnectionState);
+                };
+
+                // 处理 ICE 候选
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        ws.send(JSON.stringify({
+                            type: 'webrtc/candidate',
+                            value: event.candidate.toJSON().candidate
+                        }));
+                    }
+                };
+
+                // 添加接收视频和音频的 transceiver
+                pc.addTransceiver('video', { direction: 'recvonly' });
+                pc.addTransceiver('audio', { direction: 'recvonly' });
+
+                // 创建 offer
+                const offer = await pc.createOffer({
+                    offerToReceiveVideo: true,
+                    offerToReceiveAudio: true
+                });
+
+                await pc.setLocalDescription(offer);
+                console.log("发送 WebRTC offer");
+
+                // 通过 WebSocket 发送 offer
+                ws.send(JSON.stringify({
+                    type: 'webrtc/offer',
+                    value: offer.sdp
+                }));
+            };
+
+            // 处理 WebSocket 消息
+            ws.onmessage = async (event) => {
+                try {
+                    const msg = JSON.parse(event.data);
+                    const pc = pcRef.current;
+
+                    if (!pc) return;
+
+                    switch (msg.type) {
+                        case 'webrtc/answer':
+                            console.log("收到 WebRTC answer");
+                            await pc.setRemoteDescription({
+                                type: 'answer',
+                                sdp: msg.value
+                            });
+                            break;
+
+                        case 'webrtc/candidate':
+                            if (msg.value) {
+                                console.log("收到 ICE candidate");
+                                await pc.addIceCandidate({
+                                    candidate: msg.value,
+                                    sdpMid: '0'
+                                });
+                            }
+                            break;
+
+                        case 'error':
+                            console.error("WebSocket 错误:", msg.value);
+                            setError(msg.value);
+                            setIsLoading(false);
+                            break;
+
+                        default:
+                            console.log("收到未知消息类型:", msg.type);
+                    }
+                } catch (err) {
+                    console.error("处理 WebSocket 消息失败:", err);
                 }
             };
 
-            pc.onconnectionstatechange = () => {
-                console.log(`连接状态（${streamType}）:`, pc.connectionState);
-                setIsConnected(pc.connectionState === "connected");
-                if (pc.connectionState === "failed") {
-                    setError(`WebRTC连接失败（${streamType}）`);
-                    setIsLoading(false);
-                }
+            ws.onerror = (error) => {
+                console.error("WebSocket 错误:", error);
+                setError("WebSocket 连接错误");
+                setIsLoading(false);
             };
 
-            pc.oniceconnectionstatechange = () => {
-                console.log(`ICE连接状态（${streamType}）:`, pc.iceConnectionState);
-                if (pc.iceConnectionState === "connected" || pc.iceConnectionState === "completed") {
-                    setIsLoading(false);
+            ws.onclose = () => {
+                console.log("WebSocket 连接已关闭");
+                if (isConnected) {
+                    setError("连接已断开");
                 }
+                setIsConnected(false);
+                setIsLoading(false);
             };
-
-            const offer = await pc.createOffer({
-                offerToReceiveVideo: true,
-                offerToReceiveAudio: false
-            });
-
-            await pc.setLocalDescription(offer);
-
-            // 使用带 stream_id 的 API 路径
-            const response = await axiosInstance.post(`webrtc/offer/${streamId}`, {
-                sdp: offer.sdp,
-                type: offer.type
-            });
-
-            const answer = response.data;
-            await pc.setRemoteDescription(new RTCSessionDescription(answer));
-
-            console.log(`WebRTC连接建立成功（${streamType}）`);
 
         } catch (err) {
             console.error("创建WebRTC连接失败:", err);
@@ -112,13 +184,23 @@ export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainS
     }, [mainStream]);
 
     const closeConnection = () => {
+        // 关闭 RTCPeerConnection
         if (pcRef.current) {
             pcRef.current.close();
             pcRef.current = null;
         }
+        
+        // 关闭 WebSocket
+        if (wsRef.current) {
+            wsRef.current.close();
+            wsRef.current = null;
+        }
+        
+        // 清除视频流
         if (videoRef.current) {
             videoRef.current.srcObject = null;
         }
+        
         setIsConnected(false);
         setError(null);
         setIsLoading(false);
