@@ -2,7 +2,6 @@ import React, { useRef, useState } from 'react';
 import { DeviceInfoAPI } from '../../contexts/API';
 import { toast } from '../base/Toast';
 import SparkMD5 from 'spark-md5';
-import CryptoJS from 'crypto-js';
 
 function SystemSetting() {
     const fileInputRef = useRef(null);
@@ -390,38 +389,45 @@ function SystemSetting() {
                 const baseURL = window.location.origin;
                 const downloadUrl = `${baseURL}${fileUrl}`;
 
+
                 console.log('开始下载配置文件:', downloadUrl);
                 toast.success('配置导出成功，开始下载...');
-
-                // 使用 fetch API 下载文件，确保携带认证信息
-                const downloadResponse = await fetch(downloadUrl, {
-                    method: 'GET',
-                    credentials: 'include', // 携带 cookies
-                    headers: {
-                        'Cookie': `token=${localStorage.getItem('token')}`
-                    }
-                });
-
-                if (!downloadResponse.ok) {
-                    throw new Error(`下载失败: ${downloadResponse.status} ${downloadResponse.statusText}`);
-                }
-
-                // 将响应转换为 blob
-                const blob = await downloadResponse.blob();
-
-                // 创建 blob URL
-                const blobUrl = window.URL.createObjectURL(blob);
-
-                // 创建a标签来触发下载
                 const link = document.createElement('a');
-                link.href = blobUrl;
+                link.href = downloadUrl;
                 link.download = 'config.tar';
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
 
+                // 使用 fetch API 下载文件，确保携带认证信息
+                // const downloadResponse = await fetch(downloadUrl, {
+                //     method: 'GET',
+                //     credentials: 'include', // 携带 cookies
+                //     headers: {
+                //         'Cookie': `token=${localStorage.getItem('token')}`
+                //     }
+                // });
+
+                // if (!downloadResponse.ok) {
+                //     throw new Error(`下载失败: ${downloadResponse.status} ${downloadResponse.statusText}`);
+                // }
+
+                // // 将响应转换为 blob
+                // const blob = await downloadResponse.blob();
+
+                // // 创建 blob URL
+                // const blobUrl = window.URL.createObjectURL(blob);
+
+                // // 创建a标签来触发下载
+                // const link = document.createElement('a');
+                // link.href = blobUrl;
+                // link.download = 'config.tar';
+                // document.body.appendChild(link);
+                // link.click();
+                // document.body.removeChild(link);
+
                 // 释放 blob URL
-                window.URL.revokeObjectURL(blobUrl);
+                // window.URL.revokeObjectURL(blobUrl);
 
                 toast.success(`配置文件下载成功 (${(size / 1024 / 1024).toFixed(2)}MB)`);
             } else {

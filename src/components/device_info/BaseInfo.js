@@ -63,21 +63,31 @@ function BaseInfo() {
         return () => clearInterval(timer);
     }, [currentTime]);
 
+    const getTimezoneOffset = (sTz) => {
+        if (!sTz) return 0;
+        const match = sTz.match(/UTC([+-])(\d+)/);
+        if (!match) return 0;
+        const sign = match[1] === '+' ? 1 : -1;
+        const hours = parseInt(match[2], 10);
+        return sign * hours;
+    };
     // 格式化时间戳
     const formatTimestamp = (timestamp) => {
-        if (!timestamp) return '-';
-        const date = new Date(timestamp);
-        return date.toLocaleString('zh-CN');
+        const timezoneOffsetHours = getTimezoneOffset(currentTime?.sTz || 'UTC+8');
+        const timestampWithOffset = timestamp + (timezoneOffsetHours * 60 * 60);
+        if (!timestampWithOffset) return '-';
+        const date = new Date(timestampWithOffset);
+        return date.toLocaleString('en');
     };
 
     // 准备设备信息数据
     const deviceInfoItems = [
-        { key: 'deviceName', label: '设备名称:', value: baseInfo?.sDeviceName },
+        // { key: 'deviceName', label: '设备名称:', value: baseInfo?.sDeviceName },
         { key: 'basePlate', label: '主板型号:', value: baseInfo?.sBasePlateModel },
         { key: 'sensor', label: '传感器型号:', value: baseInfo?.sSensorModel },
         { key: 'firmware', label: '固件版本:', value: baseInfo?.sFirmwareVersion },
         { key: 'serial', label: '序列号:', value: baseInfo?.sSerialNumber },
-        { key: 'mac', label: 'MAC地址:', value: baseInfo?.sMacAddress }
+        // { key: 'mac', label: 'MAC地址:', value: baseInfo?.sMacAddress }
     ];
 
     // 准备时间信息数据
