@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { InferenceAPI } from "../../contexts/API";
+import { InferenceAPI, SensecraftAPI } from "../../contexts/API";
 import ModelManage from "./Modelmanage";
 import InferenceOutput from "./InferenceOuput";
+import SensecraftPanel from "./SensecraftPanel";
 import { Play, Square, Activity, Save } from 'lucide-react';
 import './Inference.css';
 import toast from '../base/Toast';
@@ -65,8 +66,10 @@ export default function InferencePage() {
             };
             await InferenceAPI.setInferenceConfig(configData);
             toast.success('推理配置保存成功');
-            // 重新加载状态
-            await loadInferenceStatus();
+            // 延迟1秒后重新加载状态
+            setTimeout(async () => {
+                await loadInferenceStatus();
+            }, 3000);
         } catch (error) {
             console.error('保存推理配置失败:', error);
             toast.error('保存推理配置失败');
@@ -82,7 +85,7 @@ export default function InferencePage() {
             stop: { text: '已停止', color: '#64748b', icon: <Square size={16} /> },
             error: { text: '错误', color: '#dc2626', icon: <AlertCircle size={16} /> }
         };
-        
+
         const config = statusConfig[inferenceStatus.sStatus] || statusConfig.stop;
         return (
             <div style={{
@@ -112,19 +115,22 @@ export default function InferencePage() {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {/* 模型管理 */}
-                <ModelManage onModelDeleted={loadModels} />
+            {/* Sensecraft 第三方平台集成 */}
+            <SensecraftPanel onModelConverted={loadModels} />
 
-                {/* 推理配置 */}
+            {/* 模型管理 */}
+            <ModelManage onModelDeleted={loadModels} />
+
+            {/* 推理配置 */}
             <div className="content-card">
                 <div className="card-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Play size={20} color="#3b82f6" />
                         <div>
                             <h3>推理配置</h3>
-                            <p style={{ 
-                                margin: '4px 0 0 0', 
-                                fontSize: '13px', 
+                            <p style={{
+                                margin: '4px 0 0 0',
+                                fontSize: '13px',
                                 color: 'var(--text-secondary)',
                                 fontWeight: 'normal'
                             }}>
@@ -214,8 +220,8 @@ export default function InferencePage() {
                                 fontSize: '14px',
                                 color: 'var(--text-secondary)'
                             }}>
-                                {inferenceStatus.sStatus === 'running' ? '正在运行' : 
-                                 inferenceStatus.sStatus === 'error' ? '运行错误' : '已停止'}
+                                {inferenceStatus.sStatus === 'running' ? '正在运行' :
+                                    inferenceStatus.sStatus === 'error' ? '运行错误' : '已停止'}
                             </div>
                         </div>
                     </div>
@@ -258,9 +264,9 @@ export default function InferencePage() {
                 </div>
             </div>
 
-                {/* 推理输出配置 */}
-                <InferenceOutput />
-            </div>
+            {/* 推理输出配置 */}
+            <InferenceOutput />
+        </div>
     );
 }
 
