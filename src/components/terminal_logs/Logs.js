@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, memo, useMemo } from "react";
 import { Terminal, Download, Filter, X } from 'lucide-react';
 import { urls } from '../../contexts/urls';
+import GetCookieToken from '../base/LocalData';
 import './Logs.css';
 
 // 优化日志条目组件，避免不必要的重新渲染
@@ -33,8 +34,6 @@ export default function SystemLogViewer() {
     const logContainerRef = useRef(null);
     const reconnectTimeoutRef = useRef(null);
     const reconnectAttemptsRef = useRef(0);
-
-    const WS_URL = urls.wsSystemLogs;
     const MAX_RECONNECT_ATTEMPTS = 5;
     const RECONNECT_DELAY = 3000;
     const MAX_LOG_ENTRIES = 999999; // 最大保存日志条数，超过自动删除旧日志
@@ -59,7 +58,13 @@ export default function SystemLogViewer() {
         setWsStatus('connecting');
 
         try {
-            const ws = new WebSocket(WS_URL);
+            const token = GetCookieToken();
+            if (!token) {
+                console.error("未找到token!");
+                setWsStatus('error');
+                return;
+            }
+            const ws = new WebSocket(urls.wsSystemLogs(token));
             wsRef.current = ws;
 
             ws.onopen = () => {

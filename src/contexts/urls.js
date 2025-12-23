@@ -24,8 +24,7 @@ export const urls = {
 
     // log and Terminal
     wsSystemTerminal: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/system/terminal",
-    wsSystemLogs: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/system/logs",
-    wsTtyd: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/",
+    wsSystemLogs: (token) => (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/system/logs?token=" + token,
 
     // AI inference
     modelList: "/model/list",
@@ -34,7 +33,7 @@ export const urls = {
     modelInfo: "/model/info",
     modelAlgo: "/model/algorithm",
     modelInference: "/model/inference",
-    wsInferenceResults: "/ws/inference/results",
+    wsInferenceResults: (token) => (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/inference/results?token=" + token,
     nofifyConfig: "/notify/cfg",
 
     // Live Settings - Video
