@@ -159,7 +159,7 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                         <label>字体大小</label>
                         <select
                             className="form-control"
-                            value={settings.attribute.iOSDFontSize}
+                            value={settings.attribute?.iOSDFontSize}
                             onChange={(e) => handleAttributeChange("iOSDFontSize", parseInt(e.target.value))}
                         >
                             <option value="0">自适应</option>
@@ -174,7 +174,7 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                         <input
                             type="color"
                             className="form-control"
-                            value={`#${settings.attribute.sOSDFrontColor}`}
+                            value={`#${settings.attribute?.sOSDFrontColor}`}
                             onChange={(e) => handleAttributeChange("sOSDFrontColor", e.target.value.slice(1))}
                         />
                     </div>
@@ -183,7 +183,7 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                     <label>颜色模式</label>
                     <select
                         className="form-control"
-                        value={settings.attribute.sOSDFrontColorMode}
+                        value={settings.attribute?.sOSDFrontColorMode}
                         onChange={(e) => handleAttributeChange("sOSDFrontColorMode", parseInt(e.target.value))}
                     >
                         <option value="0">黑白自动</option>
@@ -198,20 +198,20 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                     <label className="toggle-switch">
                         <input
                             type="checkbox"
-                            checked={settings.channelNameOverlay.iEnabled === 1}
+                            checked={settings.channelNameOverlay?.iEnabled === 1}
                             onChange={(e) => handleOverlayChange("channelNameOverlay", "iEnabled", e.target.checked ? 1 : 0)}
                         />
                         <span className="toggle-slider"></span>
                     </label>
                 </div>
-                {settings.channelNameOverlay.iEnabled === 1 && (
+                {settings.channelNameOverlay?.iEnabled === 1 && (
                     <div className="overlay-settings-content">
                         <div className="form-group">
                             <label>通道名称</label>
                             <input
                                 type="text"
                                 className="form-control"
-                                value={settings.channelNameOverlay.sChannelName}
+                                value={settings.channelNameOverlay?.sChannelName}
                                 onChange={(e) => handleOverlayChange("channelNameOverlay", "sChannelName", e.target.value)}
                             />
                         </div>
@@ -221,7 +221,7 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                                 <input
                                     type="number"
                                     className="form-control"
-                                    value={settings.channelNameOverlay.iPositionX}
+                                    value={settings.channelNameOverlay?.iPositionX}
                                     onChange={(e) => handleOverlayChange("channelNameOverlay", "iPositionX", parseFloat(e.target.value))}
                                     min="0"
                                     max="1"
@@ -233,7 +233,7 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                                 <input
                                     type="number"
                                     className="form-control"
-                                    value={settings.channelNameOverlay.iPositionY}
+                                    value={settings.channelNameOverlay?.iPositionY}
                                     onChange={(e) => handleOverlayChange("channelNameOverlay", "iPositionY", parseFloat(e.target.value))}
                                     min="0"
                                     max="1"
@@ -251,20 +251,20 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                     <label className="toggle-switch">
                         <input
                             type="checkbox"
-                            checked={settings.dateTimeOverlay.iEnabled === 1}
+                            checked={settings.dateTimeOverlay?.iEnabled === 1}
                             onChange={(e) => handleOverlayChange("dateTimeOverlay", "iEnabled", e.target.checked ? 1 : 0)}
                         />
                         <span className="toggle-slider"></span>
                     </label>
                 </div>
-                {settings.dateTimeOverlay.iEnabled === 1 && (
+                {settings.dateTimeOverlay?.iEnabled === 1 && (
                     <div className="overlay-settings-content">
                         <div className="form-row">
                             <div className="form-group">
                                 <label>日期格式</label>
                                 <select
                                     className="form-control"
-                                    value={settings.dateTimeOverlay.sDateStyle}
+                                    value={settings.dateTimeOverlay?.sDateStyle}
                                     onChange={(e) => handleOverlayChange("dateTimeOverlay", "sDateStyle", e.target.value)}
                                 >
                                     <option value="CHR-YYYY-MM-DD">CHR-YYYY-MM-DD</option>
@@ -279,7 +279,7 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                                 <label>时间格式</label>
                                 <select
                                     className="form-control"
-                                    value={settings.dateTimeOverlay.sTimeStyle}
+                                    value={settings.dateTimeOverlay?.sTimeStyle}
                                     onChange={(e) => handleOverlayChange("dateTimeOverlay", "sTimeStyle", e.target.value)}
                                 >
                                     <option value="24hour">24小时制</option>
@@ -333,13 +333,13 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                     <label className="toggle-switch">
                         <input
                             type="checkbox"
-                            checked={settings.SNOverlay.iEnabled === 1}
+                            checked={settings.SNOverlay?.iEnabled === 1}
                             onChange={(e) => handleOverlayChange("SNOverlay", "iEnabled", e.target.checked ? 1 : 0)}
                         />
                         <span className="toggle-slider"></span>
                     </label>
                 </div>
-                {settings.SNOverlay.iEnabled === 1 && (
+                {settings.SNOverlay?.iEnabled === 1 && (
                     <div className="overlay-settings-content">
                         <div className="form-row">
                             <div className="form-group">
@@ -347,7 +347,7 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                                 <input
                                     type="number"
                                     className="form-control"
-                                    value={settings.SNOverlay.iPositionX}
+                                    value={settings.SNOverlay?.iPositionX}
                                     onChange={(e) => handleOverlayChange("SNOverlay", "iPositionX", parseFloat(e.target.value))}
                                     min="0"
                                     max="1"
@@ -359,7 +359,7 @@ export default function OSDSettings({ osdSettings, setOsdSettings, isOsdEditMode
                                 <input
                                     type="number"
                                     className="form-control"
-                                    value={settings.SNOverlay.iPositionY}
+                                    value={settings.SNOverlay?.iPositionY}
                                     onChange={(e) => handleOverlayChange("SNOverlay", "iPositionY", parseFloat(e.target.value))}
                                     min="0"
                                     max="1"

@@ -35,7 +35,7 @@ export default function AISettings() {
         const newSettings = {
             ...settings,
             inferenceOverlay: {
-                iEnabled: settings.inferenceOverlay.iEnabled === 1 ? 0 : 1
+                iEnabled: settings?.inferenceOverlay?.iEnabled === 1 ? 0 : 1
             }
         };
         try {
@@ -77,7 +77,7 @@ export default function AISettings() {
                     <label className="checkbox-label">
                         <input
                             type="checkbox"
-                            checked={settings.inferenceOverlay.iEnabled === 1}
+                            checked={settings?.inferenceOverlay?.iEnabled === 1}
                             onChange={handleToggle}
                         />
                         启用AI推理结果显示
@@ -88,7 +88,7 @@ export default function AISettings() {
                 </div>
             </div>
 
-            {settings.inferenceOverlay.iEnabled === 1 && (<div>
+            {settings?.inferenceOverlay?.iEnabled === 1 && (<div>
                 <div className="settings-section">
                     <h4>显示样式</h4>
                     <div className="info-box">

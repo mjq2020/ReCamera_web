@@ -436,7 +436,7 @@ export default function DisplaySettings() {
 
     // computer current blc
     useEffect(() => {
-        Object.entries(settings.profile[currentProfile].BLC).forEach(([key, value]) => {
+        Object.entries(settings?.profile?.[currentProfile]?.BLC || {}).forEach(([key, value]) => {
             if (value == "open") {
                 setCurrentBLC(key);
                 setPrevblc(key);
@@ -447,7 +447,7 @@ export default function DisplaySettings() {
 
     const handleSaveVideoAdjustment = async () => {
         try {
-            await VideoAPI.putVideoAdjustment(settings.videoAdjustment);
+            await VideoAPI.putVideoAdjustment(settings?.videoAdjustment);
             toast.success("画面设置保存成功！");
         } catch (err) {
             toast.error("保存失败：" + err.message);
@@ -457,7 +457,7 @@ export default function DisplaySettings() {
     const handleSaveNightToDay = async () => {
         try {
 
-            await VideoAPI.putNightToDay(settings.nightToDay);
+            await VideoAPI.putNightToDay(settings?.nightToDay);
             toast.success("日夜设置保存成功！");
         } catch (err) {
             toast.error("保存失败：" + err.message);
@@ -479,7 +479,7 @@ export default function DisplaySettings() {
 
     const handleSaveAdjustment = async (profileId) => {
         try {
-            await VideoAPI.putAdjustment(profileId, settings.profile[profileId].imageAdjustment);
+            await VideoAPI.putAdjustment(profileId, settings?.profile?.[profileId]?.imageAdjustment);
             toast.success("图像基础调节保存成功！");
         } catch (err) {
             toast.error("保存失败：" + err.message);
@@ -489,7 +489,7 @@ export default function DisplaySettings() {
     const handleSaveExposure = async (data = null) => {
         try {
             if (data === null) {
-                await VideoAPI.putExposure(currentProfile, settings.profile[currentProfile].exposure);
+                await VideoAPI.putExposure(currentProfile, settings?.profile?.[currentProfile]?.exposure);
             } else {
                 await VideoAPI.putExposure(currentProfile, data);
             }
@@ -502,7 +502,7 @@ export default function DisplaySettings() {
     const handleSaveBLC = async (data = null) => {
         try {
             if (data === null) {
-                await VideoAPI.putBLC(currentProfile, settings.profile[currentProfile].BLC);
+                await VideoAPI.putBLC(currentProfile, settings?.profile?.[currentProfile]?.BLC);
             } else {
                 await VideoAPI.putBLC(currentProfile, data);
             }
@@ -515,7 +515,7 @@ export default function DisplaySettings() {
     const handleSaveWhiteBlance = async (data = null) => {
         try {
             if (data === null) {
-                await VideoAPI.putWhiteBlance(currentProfile, settings.profile[currentProfile].whiteBlance);
+                await VideoAPI.putWhiteBlance(currentProfile, settings?.profile?.[currentProfile]?.whiteBlance);
             } else {
                 await VideoAPI.putWhiteBlance(currentProfile, data);
             }
@@ -528,7 +528,7 @@ export default function DisplaySettings() {
     const handleSaveImageEnhancement = async (data = null) => {
         try {
             if (data === null) {
-                await VideoAPI.putEnhancement(currentProfile, settings.profile[currentProfile].imageEnhancement);
+                await VideoAPI.putEnhancement(currentProfile, settings?.profile?.[currentProfile]?.imageEnhancement);
             } else {
                 await VideoAPI.putEnhancement(currentProfile, data);
             }
@@ -542,7 +542,7 @@ export default function DisplaySettings() {
     // 当 currentBLC 变化时更新 BLC 设置
     useEffect(() => {
         if (prevblc !== currentBLC) {
-            const newProfile = settings.profile.map((profile, index) => {
+            const newProfile = settings?.profile?.map((profile, index) => {
                 return (index === currentProfile) ? {
                     ...profile, BLC: {
                         ...profile.BLC,
@@ -622,7 +622,7 @@ export default function DisplaySettings() {
                         <label>画面翻转</label>
                         <select
                             className="form-control"
-                            value={settings.videoAdjustment.sImageFlip}
+                            value={settings.videoAdjustment?.sImageFlip}
                             onChange={(e) => handleAttributeChange("videoAdjustment", "sImageFlip", e.target.value)}
                         >
                             <option value="close">原始画面</option>
@@ -635,7 +635,7 @@ export default function DisplaySettings() {
                         <label>画面旋转</label>
                         <select
                             className="form-control"
-                            value={settings.videoAdjustment.iImageRotation}
+                            value={settings.videoAdjustment?.iImageRotation}
                             onChange={(e) => handleAttributeChange("videoAdjustment", "iImageRotation", Number(e.target.value))}
                         >
                             <option value={0}>0°</option>
@@ -651,7 +651,7 @@ export default function DisplaySettings() {
                         <label>视频制式</label>
                         <select
                             className="form-control"
-                            value={settings.videoAdjustment.sPowerLineFrequencyMode}
+                            value={settings.videoAdjustment?.sPowerLineFrequencyMode}
                             onChange={(e) => handleAttributeChange("videoAdjustment", "sPowerLineFrequencyMode", e.target.value)}
                         >
                             <option value="PAL(50HZ)">PAL(50HZ)</option>
@@ -676,7 +676,7 @@ export default function DisplaySettings() {
                         <label>转换模式</label>
                         <select
                             className="form-control"
-                            value={settings.nightToDay.iMode}
+                            value={settings.nightToDay?.iMode}
                             onChange={(e) => handleAttributeChange("nightToDay", "iMode", Number(e.target.value))}
                         >
                             <option value="0">自动转换</option>
@@ -687,7 +687,7 @@ export default function DisplaySettings() {
                     <div className="form-group">
                         <label>转换阈值灵敏度</label>
                         <select className="form-control"
-                            value={settings.nightToDay.iNightToDayFilterLevel}
+                            value={settings.nightToDay?.iNightToDayFilterLevel}
                             onChange={(e) => handleAttributeChange("nightToDay", "iNightToDayFilterLevel", Number(e.target.value))}
                         >
                             <option value="0">高</option>
@@ -704,7 +704,7 @@ export default function DisplaySettings() {
                             className="form-control"
                             min="1"
                             max="60"
-                            value={settings.nightToDay.iNightToDayFilterTime}
+                            value={settings.nightToDay?.iNightToDayFilterTime}
                             onChange={(e) => handleAttributeChange("nightToDay", "iNightToDayFilterTime", Number(e.target.value))}
                         />
                     </div>
@@ -715,11 +715,11 @@ export default function DisplaySettings() {
                         </button>
                     </div>
                 </div>
-                {settings.nightToDay.iMode === 1 && (
+                {settings.nightToDay?.iMode === 1 && (
                     <div className="form-group" style={{ width: '100%' }}>
                         <DualTimeSlider
-                            dawnTime={settings.nightToDay.iDawnTime}
-                            duskTime={settings.nightToDay.iDuskTime}
+                            dawnTime={settings.nightToDay?.iDawnTime}
+                            duskTime={settings.nightToDay?.iDuskTime}
                             onChange={(newDawn, newDusk) => {
                                 setSettings(prev => ({
                                     ...prev,
@@ -776,38 +776,38 @@ export default function DisplaySettings() {
                 <div className="settings-section">
                     <h4>相机设置</h4>
                     <div className="form-group">
-                        <label>亮度：{settings.profile[currentProfile].imageAdjustment.iBrightness}</label>
+                        <label>亮度：{settings.profile[currentProfile]?.imageAdjustment?.iBrightness}</label>
                         <input
                             type="range"
                             className="slider"
                             min="0"
                             max="100"
-                            value={settings.profile[currentProfile].imageAdjustment.iBrightness}
+                            value={settings.profile[currentProfile]?.imageAdjustment?.iBrightness}
                             onChange={(e) => handleProfileChange("imageAdjustment", "iBrightness", Number(e.target.value))}
                             onMouseUp={() => handleSaveAdjustment(currentProfile)}
                         />
                     </div>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>对比度：{settings.profile[currentProfile].imageAdjustment.iContrast}</label>
+                            <label>对比度：{settings.profile[currentProfile]?.imageAdjustment?.iContrast}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="0"
                                 max="100"
-                                value={settings.profile[currentProfile].imageAdjustment.iContrast}
+                                value={settings.profile[currentProfile]?.imageAdjustment?.iContrast}
                                 onChange={(e) => handleProfileChange("imageAdjustment", "iContrast", Number(e.target.value))}
                                 onMouseUp={() => handleSaveAdjustment(currentProfile)}
                             />
                         </div>
                         <div className="form-group">
-                            <label>饱和度：{settings.profile[currentProfile].imageAdjustment.iSaturation}</label>
+                            <label>饱和度：{settings.profile[currentProfile]?.imageAdjustment?.iSaturation}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="0"
                                 max="100"
-                                value={settings.profile[currentProfile].imageAdjustment.iSaturation}
+                                value={settings.profile[currentProfile]?.imageAdjustment?.iSaturation}
                                 onChange={(e) => handleProfileChange("imageAdjustment", "iSaturation", Number(e.target.value))}
                                 onMouseUp={() => handleSaveAdjustment(currentProfile)}
                             />
@@ -815,25 +815,25 @@ export default function DisplaySettings() {
                     </div>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>锐度：{settings.profile[currentProfile].imageAdjustment.iSharpness}</label>
+                            <label>锐度：{settings.profile[currentProfile]?.imageAdjustment?.iSharpness}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="0"
                                 max="100"
-                                value={settings.profile[currentProfile].imageAdjustment.iSharpness}
+                                value={settings.profile[currentProfile]?.imageAdjustment?.iSharpness}
                                 onChange={(e) => handleProfileChange("imageAdjustment", "iSharpness", Number(e.target.value))}
                                 onMouseUp={() => handleSaveAdjustment(currentProfile)}
                             />
                         </div>
                         <div className="form-group">
-                            <label>色调：{settings.profile[currentProfile].imageAdjustment.iHue}</label>
+                            <label>色调：{settings.profile[currentProfile]?.imageAdjustment?.iHue}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="0"
                                 max="100"
-                                value={settings.profile[currentProfile].imageAdjustment.iHue}
+                                value={settings.profile[currentProfile]?.imageAdjustment?.iHue}
                                 onChange={(e) => handleProfileChange("imageAdjustment", "iHue", Number(e.target.value))}
                                 onMouseUp={() => handleSaveAdjustment(currentProfile)}
                             />
@@ -844,18 +844,18 @@ export default function DisplaySettings() {
                             <label>曝光模式</label>
                             <select
                                 className="form-control"
-                                value={settings.profile[currentProfile].exposure.sExposureMode}
+                                value={settings.profile[currentProfile]?.exposure?.sExposureMode}
                                 onChange={(e) => handleProfileChange("exposure", "sExposureMode", e.target.value)}
                             >
                                 <option value="auto">自动</option>
                                 <option value="manual">手动</option>
                             </select>
                         </div>
-                        {settings.profile[currentProfile].exposure.sExposureMode === "manual" && <div className="form-group">
+                        {settings.profile[currentProfile]?.exposure?.sExposureMode === "manual" && <div className="form-group">
                             <label>曝光时间</label>
                             <select
                                 className="form-control"
-                                value={settings.profile[currentProfile].exposure.sExposureTime}
+                                value={settings.profile[currentProfile]?.exposure?.sExposureTime}
                                 onChange={(e) => handleProfileChange("exposure", "sExposureTime", e.target.value)}
 
                             >
@@ -876,21 +876,21 @@ export default function DisplaySettings() {
                             <label>增益模式</label>
                             <select
                                 className="form-control"
-                                value={settings.profile[currentProfile].exposure.sGainMode}
+                                value={settings.profile[currentProfile]?.exposure?.sGainMode}
                                 onChange={(e) => handleProfileChange("exposure", "sGainMode", e.target.value)}
                             >
                                 <option value="auto">自动</option>
                                 <option value="manual">手动</option>
                             </select>
                         </div>
-                        {settings.profile[currentProfile].exposure.sGainMode === "manual" && <div className="form-group">
+                        {settings.profile[currentProfile]?.exposure?.sGainMode === "manual" && <div className="form-group">
                             <label>曝光增益值：{settings.profile[currentProfile].exposure.iExposureGain}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="1"
                                 max="128"
-                                value={settings.profile[currentProfile].exposure.iExposureGain}
+                                value={settings.profile[currentProfile]?.exposure?.iExposureGain}
                                 onChange={(e) => handleProfileChange("exposure", "iExposureGain", Number(e.target.value))}
                                 onMouseUp={() => handleSaveExposure()}
                             />
@@ -911,13 +911,13 @@ export default function DisplaySettings() {
                             </select>
                         </div>
                         {currentBLC != "close" && currentBLC != "sHDR" && <div className="form-group">
-                            <label>{currentBLC}等级：{settings.profile[currentProfile].BLC[BLCNAME2DISPLAY[currentBLC]]}</label>
+                            <label>{currentBLC}等级：{settings.profile[currentProfile]?.BLC[BLCNAME2DISPLAY[currentBLC]]}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="0"
                                 max="100"
-                                value={settings.profile[currentProfile].BLC[BLCNAME2DISPLAY[currentBLC]]}
+                                value={settings.profile[currentProfile]?.BLC[BLCNAME2DISPLAY[currentBLC]]}
                                 onChange={(e) => handleProfileChange("BLC", BLCNAME2DISPLAY[currentBLC], Number(e.target.value))}
                                 onMouseUp={() => handleSaveBLC()}
                             />
@@ -929,7 +929,7 @@ export default function DisplaySettings() {
                             <label>白平衡模式</label>
                             <select
                                 className="form-control"
-                                value={settings.profile[currentProfile].whiteBlance.sWhiteBlanceStyle}
+                                value={settings.profile[currentProfile]?.whiteBlance?.sWhiteBlanceStyle}
                                 onChange={(e) => handleProfileChange("whiteBlance", "sWhiteBlanceStyle", e.target.value)}
                             >
                                 <option value="auto">自动</option>
@@ -939,14 +939,14 @@ export default function DisplaySettings() {
                                 <option value="outdoor">室外</option>
                             </select>
                         </div>
-                        {settings.profile[currentProfile].whiteBlance.sWhiteBlanceStyle === "manual" && <div className="form-group">
+                        {settings.profile[currentProfile]?.whiteBlance?.sWhiteBlanceStyle === "manual" && <div className="form-group">
                             <label>色温(K)：{settings.profile[currentProfile].whiteBlance.iWhiteBalanceCT}</label>
                             <input
                                 type="range"
                                 className="slider"
                                 min="2800"
                                 max="7500"
-                                value={settings.profile[currentProfile].whiteBlance.iWhiteBalanceCT}
+                                value={settings.profile[currentProfile]?.whiteBlance?.iWhiteBalanceCT}
                                 onChange={(e) => handleProfileChange("whiteBlance", "iWhiteBalanceCT", Number(e.target.value))}
                                 onMouseUp={() => handleSaveWhiteBlance()}
                             />
@@ -957,33 +957,33 @@ export default function DisplaySettings() {
                         <label>降噪模式</label>
                         <select
                             className="form-control"
-                            value={settings.profile[currentProfile].imageEnhancement.sNoiseReduceMode}
+                            value={settings.profile[currentProfile]?.imageEnhancement?.sNoiseReduceMode}
                             onChange={(e) => handleProfileChange("imageEnhancement", "sNoiseReduceMode", Number(e.target.value))}
                         >
                             <option value={0}>关闭</option>
                             <option value={1}>专家模式(mixnr)</option>
                         </select>
-                        {settings.profile[currentProfile].imageEnhancement.sNoiseReduceMode === 1 && <div className="form-row">
+                        {settings.profile[currentProfile]?.imageEnhancement?.sNoiseReduceMode === 1 && <div className="form-row">
                             <div className="form-group">
-                                <label>空域降噪：{settings.profile[currentProfile].imageEnhancement.iSpatialDenoiseLevel}</label>
+                                <label>空域降噪：{settings.profile[currentProfile]?.imageEnhancement?.iSpatialDenoiseLevel}</label>
                                 <input
                                     type="range"
                                     className="slider"
                                     min="0"
                                     max="100"
-                                    value={settings.profile[currentProfile].imageEnhancement.iSpatialDenoiseLevel}
+                                    value={settings.profile[currentProfile]?.imageEnhancement?.iSpatialDenoiseLevel}
                                     onChange={(e) => handleProfileChange("imageEnhancement", "iSpatialDenoiseLevel", Number(e.target.value))}
                                     onMouseUp={() => handleSaveImageEnhancement()}
                                 />
                             </div>
                             <div className="form-group">
-                                <label>时域降噪：{settings.profile[currentProfile].imageEnhancement.iTemporalDenoiseLevel}</label>
+                                <label>时域降噪：{settings.profile[currentProfile]?.imageEnhancement?.iTemporalDenoiseLevel}</label>
                                 <input
                                     type="range"
                                     className="slider"
                                     min="0"
                                     max="100"
-                                    value={settings.profile[currentProfile].imageEnhancement.iTemporalDenoiseLevel}
+                                    value={settings.profile[currentProfile]?.imageEnhancement?.iTemporalDenoiseLevel}
                                     onChange={(e) => handleProfileChange("imageEnhancement", "iTemporalDenoiseLevel", Number(e.target.value))}
                                     onMouseUp={() => handleSaveImageEnhancement()}
                                 />

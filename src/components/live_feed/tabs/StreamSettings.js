@@ -145,7 +145,7 @@ export default function StreamSettings() {
                         <input
                             type="number"
                             className="form-control"
-                            value={settings.rtsp.iPort}
+                            value={settings.rtsp?.iPort}
                             onChange={(e) => handleRtspChange("iPort", parseInt(e.target.value))}
                             min="1"
                             max="65535"
@@ -153,7 +153,7 @@ export default function StreamSettings() {
                     </div>
                     <div className="info-box">
                         <p className="info-text">
-                            RTSP地址: rtsp://[设备IP]:{settings.rtsp.iPort}/stream
+                            RTSP地址: rtsp://[设备IP]:{settings.rtsp?.iPort}/stream
                         </p>
                     </div>
                 </div>
@@ -167,7 +167,7 @@ export default function StreamSettings() {
                         <input
                             type="text"
                             className="form-control"
-                            value={settings.rtmp.sURL}
+                            value={settings.rtmp?.sURL}
                             onChange={(e) => handleRtmpChange("sURL", e.target.value)}
                             placeholder="rtmp://example.com/live/stream"
                         />
@@ -176,21 +176,21 @@ export default function StreamSettings() {
                         <label>认证类型</label>
                         <select
                             className="form-control"
-                            value={settings.rtmp.iAuthType}
+                            value={settings.rtmp?.iAuthType}
                             onChange={(e) => handleRtmpChange("iAuthType", parseInt(e.target.value))}
                         >
                             <option value={0}>无认证</option>
                             <option value={1}>需要认证</option>
                         </select>
                     </div>
-                    {settings.rtmp.iAuthType === 1 && (
+                    {settings.rtmp?.iAuthType === 1 && (
                         <>
                             <div className="form-group">
                                 <label>用户名</label>
                                 <input
                                     type="text"
                                     className="form-control"
-                                    value={settings.rtmp.sUserName}
+                                    value={settings.rtmp?.sUserName}
                                     onChange={(e) => handleRtmpChange("sUserName", e.target.value)}
                                 />
                             </div>
@@ -199,7 +199,7 @@ export default function StreamSettings() {
                                 <input
                                     type="password"
                                     className="form-control"
-                                    value={settings.rtmp.sPassword}
+                                    value={settings.rtmp?.sPassword}
                                     onChange={(e) => handleRtmpChange("sPassword", e.target.value)}
                                 />
                             </div>
@@ -208,7 +208,7 @@ export default function StreamSettings() {
                                 <input
                                     type="text"
                                     className="form-control"
-                                    value={settings.rtmp.sSecretKey}
+                                    value={settings.rtmp?.sSecretKey}
                                     onChange={(e) => handleRtmpChange("sSecretKey", e.target.value)}
                                 />
                             </div>
@@ -225,7 +225,7 @@ export default function StreamSettings() {
                         <input
                             type="text"
                             className="form-control"
-                            value={settings.onvif.sUserName}
+                            value={settings.onvif?.sUserName}
                             onChange={(e) => handleOnvifChange("sUserName", e.target.value)}
                         />
                     </div>
@@ -234,7 +234,7 @@ export default function StreamSettings() {
                         <input
                             type="password"
                             className="form-control"
-                            value={settings.onvif.sPassword}
+                            value={settings.onvif?.sPassword}
                             onChange={(e) => handleOnvifChange("sPassword", e.target.value)}
                         />
                     </div>

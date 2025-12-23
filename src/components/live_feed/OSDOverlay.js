@@ -22,9 +22,9 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
         if (!containerRef.current) return;
 
         const updateSize = () => {
-            const rect = containerRef.current.getBoundingClientRect();
-            const newWidth = Math.round(rect.width);
-            const newHeight = Math.round(rect.height);
+            const rect = containerRef?.current?.getBoundingClientRect();
+            const newWidth = Math.round(rect?.width);
+            const newHeight = Math.round(rect?.height);
             
             // 只在尺寸真正变化时更新，避免不必要的重新渲染
             setContainerSize(prev => {
@@ -97,15 +97,15 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
 
     // 获取字体大小（像素）
     const getFontSize = () => {
-        if (attribute.iOSDFontSize === 0) {
+        if (attribute?.iOSDFontSize === 0) {
             // 自适应：根据容器宽度计算
             return Math.max(16, Math.min(64, containerSize.width * 0.03));
         }
-        return attribute.iOSDFontSize;
+        return attribute?.iOSDFontSize;
     };
 
     const fontSize = getFontSize();
-    const fontColor = `#${attribute.sOSDFrontColor}`;
+    const fontColor = `#${attribute?.sOSDFrontColor}`;
 
     // 格式化日期时间
     const formatDateTime = () => {
@@ -118,7 +118,7 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
         const month = String(now.getMonth() + 1).padStart(2, '0');
         const day = String(now.getDate()).padStart(2, '0');
 
-        switch (dateTimeOverlay.sDateStyle) {
+        switch (dateTimeOverlay?.sDateStyle) {
             case 'CHR-YYYY-MM-DD':
                 dateStr = `${year}-${month}-${day}`;
                 break;
@@ -142,7 +142,7 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
         }
 
         // 星期
-        if (dateTimeOverlay.iDisplayWeekEnabled === 1) {
+        if (dateTimeOverlay?.iDisplayWeekEnabled === 1) {
             const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             dateStr += ` ${weekDays[now.getDay()]}`;
         }
@@ -152,7 +152,7 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
         const minutes = String(now.getMinutes()).padStart(2, '0');
         const seconds = String(now.getSeconds()).padStart(2, '0');
 
-        if (dateTimeOverlay.sTimeStyle === '12hour') {
+        if (dateTimeOverlay?.sTimeStyle === '12hour') {
             const period = hours >= 12 ? 'PM' : 'AM';
             const displayHours = hours % 12 || 12;
             timeStr = `${displayHours}:${minutes}:${seconds} ${period}`;
@@ -205,7 +205,7 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
 
     // 获取文本阴影样式（增强可读性）
     const getTextShadow = () => {
-        if (attribute.sOSDFrontColorMode === 0) {
+        if (attribute?.sOSDFrontColorMode === 0) {
             // 黑白自动模式：使用对比色阴影
             return '1px 1px 2px rgba(0, 0, 0, 0.8), -1px -1px 2px rgba(255, 255, 255, 0.5)';
         }
@@ -226,13 +226,13 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
     return (
         <>
             {/* 通道名称叠加 */}
-            {channelNameOverlay.iEnabled === 1 && (
+            {channelNameOverlay?.iEnabled === 1 && (
                 <div
                     className={`osd-overlay-item ${isOsdEditMode ? 'editable' : ''} ${draggingItem === 'channelNameOverlay' ? 'dragging' : ''}`}
                     style={{
                         ...textStyle,
-                        left: `${channelNameOverlay.iPositionX * 100}%`,
-                        top: `${channelNameOverlay.iPositionY * 100}%`,
+                        left: `${channelNameOverlay?.iPositionX * 100}%`,
+                        top: `${channelNameOverlay?.iPositionY * 100}%`,
                         cursor: isOsdEditMode ? 'move' : 'default'
                     }}
                     onMouseDown={(e) => handleMouseDown(e, 'channelNameOverlay')}
@@ -242,7 +242,7 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
                         <input
                             type="text"
                             className="osd-text-input"
-                            value={channelNameOverlay.sChannelName}
+                            value={channelNameOverlay?.sChannelName}
                             onChange={handleTextChange}
                             onBlur={handleEditBlur}
                             autoFocus
@@ -253,19 +253,19 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
                             }}
                         />
                     ) : (
-                        channelNameOverlay.sChannelName
+                        channelNameOverlay?.sChannelName
                     )}
                 </div>
             )}
 
             {/* 日期时间叠加 */}
-            {dateTimeOverlay.iEnabled === 1 && (
+            {dateTimeOverlay?.iEnabled === 1 && (
                 <div
                     className={`osd-overlay-item ${isOsdEditMode ? 'editable' : ''} ${draggingItem === 'dateTimeOverlay' ? 'dragging' : ''}`}
                     style={{
                         ...textStyle,
-                        left: `${dateTimeOverlay.iPositionX * 100}%`,
-                        top: `${dateTimeOverlay.iPositionY * 100}%`,
+                        left: `${dateTimeOverlay?.iPositionX * 100}%`,
+                        top: `${dateTimeOverlay?.iPositionY * 100}%`,
                         cursor: isOsdEditMode ? 'move' : 'default'
                     }}
                     onMouseDown={(e) => handleMouseDown(e, 'dateTimeOverlay')}
@@ -275,13 +275,13 @@ export default function OSDOverlay({ osdSettings, isOsdEditMode, onOsdUpdate, co
             )}
 
             {/* 序列号叠加 */}
-            {SNOverlay.iEnabled === 1 && (
+            {SNOverlay?.iEnabled === 1 && (
                 <div
                     className={`osd-overlay-item ${isOsdEditMode ? 'editable' : ''} ${draggingItem === 'SNOverlay' ? 'dragging' : ''}`}
                     style={{
                         ...textStyle,
-                        left: `${SNOverlay.iPositionX * 100}%`,
-                        top: `${SNOverlay.iPositionY * 100}%`,
+                        left: `${SNOverlay?.iPositionX * 100}%`,
+                        top: `${SNOverlay?.iPositionY * 100}%`,
                         cursor: isOsdEditMode ? 'move' : 'default'
                     }}
                     onMouseDown={(e) => handleMouseDown(e, 'SNOverlay')}

@@ -50,7 +50,7 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
     const handleToggle = async () => {
         const newSettings = {
             ...localSettings,
-            iEnabled: localSettings.iEnabled === 1 ? 0 : 1
+            iEnabled: localSettings?.iEnabled === 1 ? 0 : 1
         };
         setLocalSettings(newSettings);
         if (setMaskSettings) {
@@ -155,7 +155,7 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
                     <label className="checkbox-label">
                         <input
                             type="checkbox"
-                            checked={localSettings.iEnabled === 1}
+                            checked={localSettings?.iEnabled === 1}
                             onChange={handleToggle}
                         />
                         启用隐私遮盖
@@ -166,7 +166,7 @@ export default function MaskSettings({ maskSettings, setMaskSettings, isDrawingM
                 </div>
             </div>
 
-            {localSettings.iEnabled === 1 && (<div>
+            {localSettings?.iEnabled === 1 && (<div>
                 <div className="settings-section">
                     <div className="section-header">
                         <h4>遮盖区域 ({localSettings.privacyMask.length}/{MAX_MASK_COUNT})</h4>
