@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { DeviceInfoAPI } from '../contexts/API';
 import './Login.css';
 
 const Login = () => {
   const { login } = useApp();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     sUserName: '',
     sPassword: ''
@@ -44,9 +46,9 @@ const Login = () => {
       // 检查后端返回的 iStatus，0 表示成功
       if (result.data && result.data.iStatus == 0) {
         // 登录成功，更新前端登录状态
-        console.log(11111);
         login(formData.sUserName);
-        // 登录成功后，App 组件会自动处理页面跳转
+        // 使用路由跳转到主页
+        navigate('/', { replace: true });
       } else {
         setError('用户名或密码错误');
       }

@@ -108,6 +108,8 @@
   border-radius: 10px;
   position: relative;
   overflow: hidden;
+  text-decoration: none; /* 移除链接下划线 */
+  width: auto;
 }
 
 .sidebar-item::before {

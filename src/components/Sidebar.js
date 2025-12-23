@@ -1,16 +1,19 @@
 import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import './Sidebar.css';
 
-const Sidebar = ({ activeTab, onTabChange }) => {
+const Sidebar = () => {
   const { t, language, theme, toggleLanguage, toggleTheme, username, logout } = useApp();
+  const navigate = useNavigate();
 
   const menuItems = [
-    { id: 'device-info', labelKey: 'sidebar.deviceInfo', icon: '📱' },
-    { id: 'live-view', labelKey: 'sidebar.liveView', icon: '📹' },
-    { id: 'record-settings', labelKey: 'sidebar.recordSettings', icon: '🎥' },
-    { id: 'ai-inference', labelKey: 'sidebar.aiInference', icon: '🤖' },
-    { id: 'terminal', labelKey: 'sidebar.terminal', icon: '💻' } //终端图标
+    { id: 'preview', path: '/preview', labelKey: 'sidebar.preview', icon: '🎬' },
+    { id: 'device-info', path: '/device-info', labelKey: 'sidebar.deviceInfo', icon: '📱' },
+    { id: 'live-view', path: '/live-view', labelKey: 'sidebar.liveView', icon: '📹' },
+    { id: 'record-settings', path: '/record-settings', labelKey: 'sidebar.recordSettings', icon: '🎥' },
+    { id: 'ai-inference', path: '/ai-inference', labelKey: 'sidebar.aiInference', icon: '🤖' },
+    { id: 'terminal', path: '/terminal', labelKey: 'sidebar.terminal', icon: '💻' }
   ];
 
   return (
@@ -28,14 +31,14 @@ const Sidebar = ({ activeTab, onTabChange }) => {
 
       <nav className="sidebar-nav">
         {menuItems.map(item => (
-          <button
+          <NavLink
             key={item.id}
-            className={`sidebar-item ${activeTab === item.id ? 'active' : ''}`}
-            onClick={() => onTabChange(item.id)}
+            to={item.path}
+            className={({ isActive }) => `sidebar-item ${isActive ? 'active' : ''}`}
           >
             <span className="sidebar-icon">{item.icon}</span>
             <span className="sidebar-label">{t(item.labelKey)}</span>
-          </button>
+          </NavLink>
         ))}
       </nav>
 
@@ -74,7 +77,10 @@ const Sidebar = ({ activeTab, onTabChange }) => {
         {/* 登出按钮 */}
         <button
           className="sidebar-control-button logout-button"
-          onClick={logout}
+          onClick={() => {
+            logout();
+            navigate('/login');
+          }}
           title="登出"
         >
           <span className="sidebar-control-icon">🚪</span>
