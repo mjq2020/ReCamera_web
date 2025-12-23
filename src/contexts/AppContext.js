@@ -42,6 +42,27 @@ export const AppProvider = ({ children }) => {
     document.body.setAttribute('data-theme', theme);
   }, [theme]);
 
+  // 监听未授权事件
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.log('Unauthorized event received, logging out...');
+      // 调用logout清除所有状态
+      setIsAuthenticated(false);
+      setUsername('');
+      localStorage.removeItem('isAuthenticated');
+      localStorage.removeItem('username');
+      localStorage.removeItem('token');
+    };
+
+    // 添加事件监听器
+    window.addEventListener('unauthorized', handleUnauthorized);
+
+    // 清理函数
+    return () => {
+      window.removeEventListener('unauthorized', handleUnauthorized);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 切换语言
   const toggleLanguage = () => {
     setLanguage(prev => prev === 'zh' ? 'en' : 'zh');

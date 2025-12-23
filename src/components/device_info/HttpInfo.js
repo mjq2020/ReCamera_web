@@ -84,30 +84,13 @@ function LinkSetting() {
         }
         setHttpapiInfo({ ...httpapiInfo, sApiKey: result });
         setShowApiKey(false); // 生成后自动显示密钥
-        toast.success('密钥已生成');
+        toast.success('密钥已生成,点击设置后密钥生效,旧密钥将失效,请注意保存!');
     };
 
-    // 生成随机FTP密码
-    const generateFtpPassword = () => {
-        const length = 16;
-        const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-        let result = '';
-        const randomValues = new Uint8Array(length);
-        window.crypto.getRandomValues(randomValues);
-        for (let i = 0; i < length; i++) {
-            result += charset[randomValues[i] % charset.length];
-        }
-        setFtpInfo({ ...ftpInfo, sFtpPassword: result });
-        setShowPassword(false); // 生成后自动显示密码
-        toast.success('密码已生成');
-    };
 
     const sendHttpConfig = (data) => {
         const request = async () => {
             try {
-                if (!portChecking(data.sApiPort)) {
-                    return;
-                }
                 const newData = { ...data, sEnable: httpOn }
                 await DeviceInfoAPI.postWebSetting(newData);
                 toast.success('HTTP API设置成功');
@@ -152,12 +135,6 @@ function LinkSetting() {
     const httpPage = () => {
         return httpOn &&
             <div className='form-group'>
-                <label>API端口</label>
-                <input
-                    className='form-control'
-                    value={httpapiInfo?.sApiPort}
-                    onChange={(e) => { setHttpapiInfo({ ...httpapiInfo, sApiPort: e.target.value }) }}
-                />
                 <label>访问密钥</label>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                     <div className="password-input-wrapper" style={{ flex: 1 }}>

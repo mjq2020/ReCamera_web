@@ -1,10 +1,43 @@
 import axios from 'axios'
 import { urls } from './urls'
 import { toast } from '../components/base/Toast'
+import { navigateTo } from '../utils/navigation'
+
+// 用于防止重复处理401错误的标志
+let isHandlingUnauthorized = false;
+
+// 处理未授权的情况
+const handleUnauthorized = () => {
+    // 如果已经在处理中，直接返回，避免重复提示
+    if (isHandlingUnauthorized) {
+        return;
+    }
+
+    // 设置标志，防止重复处理
+    isHandlingUnauthorized = true;
+
+    // 显示toast提示
+    toast.error('未授权，请重新登录');
+
+    // 触发事件通知AppContext清除状态（这会同步更新React状态）
+    window.dispatchEvent(new CustomEvent('unauthorized'));
+
+    // 延迟导航，确保状态已更新
+    // 使用 requestAnimationFrame 和 setTimeout 确保在下一个渲染周期执行
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            navigateTo('/login', { replace: true });
+            // 导航完成后重置标志，以便下次登录后能正常处理
+            setTimeout(() => {
+                isHandlingUnauthorized = false;
+            }, 1000);
+        }, 100);
+    });
+}
 
 const axiosInstance = axios.create(
     {
-        baseURL: "http://" + window.location.host.replace("3000", "8000") + "/cgi-bin/entry.cgi/",
+        baseURL: "http://" + window.location.host.replace("3001", "8000") + "/cgi-bin/entry.cgi/",
         timeout: 10000,
         withCredentials: true,
         responseType: 'json',
@@ -57,9 +90,8 @@ axiosInstance.interceptors.response.use(
                     toast.error(data?.message || '请求参数错误');
                     break;
                 case 401:
-                    toast.error('未授权，请重新登录');
-                    // 可以跳转到登录页
-                    // router.push('/login');
+                    // 处理未授权，toast提示已在handleUnauthorized中统一处理
+                    handleUnauthorized();
                     break;
                 case 403:
                     toast.error('拒绝访问');

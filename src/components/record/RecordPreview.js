@@ -20,7 +20,7 @@ const RecordPreview = () => {
   const [fileToDelete, setFileToDelete] = useState(null);
 
   const [firstLoad, setFirstLoad] = useState(true);
-  
+
   // 批量选择相关状态
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -270,7 +270,7 @@ const RecordPreview = () => {
   // 预览文件（供右键菜单等使用，不受选择模式影响）
   const previewFile = (file) => {
     if (file.type === 'directory') return;
-    
+
     setSelectedFile(file);
     const filePath = `${file.path}`;
     console.log(99989, relayDirectory, filePath)
@@ -411,11 +411,11 @@ const RecordPreview = () => {
   // 批量下载
   const handleBatchDownload = () => {
     if (selectedFiles.length === 0) return;
-    
+
     selectedFiles.forEach(file => {
       const filePath = `${file.path}`;
       const url = RecordAPI.getFileUrl(relayDirectory, filePath);
-      
+
       const link = document.createElement('a');
       link.href = url;
       link.download = file.name;
@@ -433,10 +433,10 @@ const RecordPreview = () => {
     if (selectedFiles.length === 0 || !selectedSlot) return;
 
     // 使用批量删除对话框
-    setFileToDelete({ 
+    setFileToDelete({
       name: `${selectedFiles.length} 个文件`,
       isBatch: true,
-      files: selectedFiles 
+      files: selectedFiles
     });
     setDeleteModalOpen(true);
   };
@@ -448,7 +448,7 @@ const RecordPreview = () => {
     try {
       let filesToDelete;
       const isBatchDelete = fileToDelete.isBatch;
-      
+
       if (isBatchDelete) {
         filesToDelete = fileToDelete.files.map(f => f.path);
       } else {
@@ -462,12 +462,12 @@ const RecordPreview = () => {
 
       if (response.data?.lRemovedFilesOrDirectories?.length > 0) {
         toast.success(`成功删除 ${response.data.lRemovedFilesOrDirectories.length} 个文件`);
-        
+
         // 批量删除后退出选择模式
         if (isBatchDelete) {
           exitSelectionMode();
         }
-        
+
         fetchFiles(currentPath);
       } else {
         toast.error('删除失败');
@@ -642,19 +642,19 @@ const RecordPreview = () => {
                       <span className="selected-count">
                         已选择 {selectedFiles.length} 个文件
                       </span>
-                      <button 
+                      <button
                         className="btn btn-small btn-primary"
                         onClick={handleBatchDownload}
                       >
                         批量下载
                       </button>
-                      <button 
+                      <button
                         className="btn btn-small btn-danger"
                         onClick={handleBatchDelete}
                       >
                         批量删除
                       </button>
-                      <button 
+                      <button
                         className="btn btn-small"
                         onClick={() => setSelectedFiles([])}
                       >
@@ -842,7 +842,7 @@ const RecordPreview = () => {
 
       {/* 右键菜单 */}
       {contextMenu && (
-        <div 
+        <div
           className="context-menu"
           style={{
             position: 'fixed',
@@ -854,7 +854,7 @@ const RecordPreview = () => {
         >
           {contextMenu.file.type !== 'directory' && (
             <>
-              <div 
+              <div
                 className="context-menu-item"
                 onClick={() => {
                   previewFile(contextMenu.file);
@@ -863,7 +863,7 @@ const RecordPreview = () => {
               >
                 预览
               </div>
-              <div 
+              <div
                 className="context-menu-item"
                 onClick={() => {
                   handleDownload(contextMenu.file);
@@ -873,7 +873,7 @@ const RecordPreview = () => {
                 下载
               </div>
               <div className="context-menu-divider"></div>
-              <div 
+              <div
                 className="context-menu-item danger"
                 onClick={() => {
                   confirmDelete(contextMenu.file);
@@ -885,7 +885,7 @@ const RecordPreview = () => {
             </>
           )}
           {contextMenu.file.type === 'directory' && (
-            <div 
+            <div
               className="context-menu-item"
               onClick={() => {
                 handleFileClick(contextMenu.file);

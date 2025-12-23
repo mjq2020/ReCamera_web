@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { InferenceAPI } from '../../contexts/API';
 import { Send, Save, Wifi, Zap, Trash2 } from 'lucide-react';
-import { jsx } from 'react/jsx-runtime';
+import { urls } from '../../contexts/urls';
 import toast from '../base/Toast';
+import GetCookieToken from '../base/LocalData';
 
 export default function InferenceOutput() {
     const [loading, setLoading] = useState(true);
@@ -13,7 +14,6 @@ export default function InferenceOutput() {
     const wsRef = useRef(null);
     const messagesContainerRef = useRef(null);
     const MAX_LOG_ENTRIES = 1000;
-    const WS_URL = "ws://192.168.66.48/ws/inference/results";
     const [config, setConfig] = useState({
         iMode: 0,
         dTemplate: {
@@ -154,26 +154,14 @@ export default function InferenceOutput() {
         setWsStatus("connecting");
         try {
             // 安全地从cookie中获取token
-            const getCookieToken = () => {
-                const cookies = document.cookie.split('; ');
-                const tokenCookie = cookies.find(row => row.startsWith('token='));
-                return tokenCookie ? tokenCookie.split('=')[1] : null;
-            };
-
-            const cookieToken = getCookieToken();
-            console.log("Cookie中的token:", cookieToken);
-
-            // 优先使用cookie中的token，如果没有则使用localStorage
-            const token = cookieToken || window.localStorage.getItem('token');
-            console.log("使用的token:", token);
-
+            const token = GetCookieToken();
             if (!token) {
                 console.error("未找到token，无法建立WebSocket连接");
                 setWsStatus("disconnected");
                 return;
             }
 
-            const ws = new WebSocket(WS_URL + "?token=" + token);
+            const ws = new WebSocket(urls.wsInferenceResults(token));
             wsRef.current = ws;
             ws.onopen = () => {
                 console.log("WebSocket连接成功！");

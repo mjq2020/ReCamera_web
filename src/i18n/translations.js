@@ -6,6 +6,7 @@ export const translations = {
     
     // 侧边栏菜单
     sidebar: {
+      preview: '实时预览',
       deviceInfo: '设备信息',
       liveView: '实时画面',
       recordSettings: '录制设置',
@@ -191,6 +192,7 @@ export const translations = {
     
     // Sidebar menu
     sidebar: {
+      preview: 'Live Preview',
       deviceInfo: 'Device Info',
       liveView: 'Live View',
       recordSettings: 'Record Settings',
