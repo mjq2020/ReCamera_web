@@ -273,7 +273,7 @@
 
 .settings-content {
   flex: 1;
-  overflow-y: auto;
+  overflow-y: scroll; /* 使用scroll而不是auto，滚动条始终显示，避免布局抖动 */
   overflow-x: hidden;
   padding: 10px;
   background: #ffffff;
