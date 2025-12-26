@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { SensecraftAPI } from "../../contexts/API";
+import { SensecraftAPI, InferenceAPI } from "../../contexts/API";
 import { Cloud, Upload, RefreshCw, Download, CheckCircle, XCircle, Clock, LogIn, User, Trash2 } from 'lucide-react';
 import toast from '../base/Toast';
 import './Inference.css';
@@ -14,6 +14,7 @@ export default function SensecraftPanel({ onModelConverted }) {
 
     // 模型转换状态
     const [converting, setConverting] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
     const [selectedOnnxFile, setSelectedOnnxFile] = useState(null);
     const [selectedDatasetFile, setSelectedDatasetFile] = useState(null);
 
@@ -26,8 +27,12 @@ export default function SensecraftPanel({ onModelConverted }) {
     const [modelList, setModelList] = useState([]);
     const [loadingList, setLoadingList] = useState(false);
 
+    // 下载任务状态 { modelId: { taskId, progress, status } }
+    const [downloadTasks, setDownloadTasks] = useState({});
+
     // 轮询定时器
     const pollTimerRef = useRef(null);
+    const downloadPollTimers = useRef({});
 
     // 组件加载时检查是否有保存的认证信息
     useEffect(() => {
@@ -77,6 +82,10 @@ export default function SensecraftPanel({ onModelConverted }) {
             if (pollTimerRef.current) {
                 clearInterval(pollTimerRef.current);
             }
+            // 清理所有下载轮询定时器
+            Object.values(downloadPollTimers.current).forEach(timer => {
+                if (timer) clearInterval(timer);
+            });
         };
     }, []);
 
@@ -84,10 +93,10 @@ export default function SensecraftPanel({ onModelConverted }) {
     const handleAuthToken = async (authToken) => {
         try {
             const response = await SensecraftAPI.parseToken(authToken);
-            const { user_id, token: validToken } = response.data.result;
+            const { user: { user_id, }, token: validToken } = response.data.result;
 
             setToken(validToken);
-            setUserId(user_id);
+            setUserId(String(user_id));
             setIsAuthenticated(true);
 
             // 保存到本地存储
@@ -177,27 +186,39 @@ export default function SensecraftPanel({ onModelConverted }) {
 
         try {
             setConverting(true);
+            setUploadProgress(0);
 
             const formData = new FormData();
             formData.append('user_id', userId);
             formData.append('framework_type', 9);
             formData.append('device_type', 40);
             formData.append('file', selectedOnnxFile);
-            // 添加文件名
-            formData.append('prompt', selectedOnnxFile.name);
+            // 添加文件名,修改后缀为rknn
+            const dotIndex = selectedOnnxFile.name.lastIndexOf('.');
+            const modelName = selectedOnnxFile.name.substring(0, dotIndex) + '.rknn';
+            formData.append('prompt', modelName);
 
             if (selectedDatasetFile) {
                 formData.append('dataset_file', selectedDatasetFile);
             }
 
-            const response = await SensecraftAPI.createTask(formData);
+            // 上传进度回调
+            const onUploadProgress = (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(percentCompleted);
+            };
+
+            const response = await SensecraftAPI.createTask(formData, onUploadProgress);
 
             if (response.data.code === 0) {
                 const modelId = response.data.data.model_id;
                 setCurrentTaskId(modelId);
                 setTaskStatus('init');
 
-                toast.success('任务创建成功，开始转换...');
+                toast.success('文件上传成功，开始转换...');
+
+                // 重置上传进度
+                setUploadProgress(0);
 
                 // 开始轮询状态
                 startPollingStatus(modelId);
@@ -258,16 +279,127 @@ export default function SensecraftPanel({ onModelConverted }) {
     };
 
     // 下载模型
-    const handleDownloadModel = (modelId) => {
-        const downloadUrl = SensecraftAPI.downloadModel(userId, modelId);
-        const link = document.createElement('a');
-        link.href = downloadUrl;
-        link.download = `${modelId}.rknn`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const handleDownloadModel = async (modelId, modelName = "") => {
+        try {
+            // 1. 发起下载请求
+            const response = await InferenceAPI.postModelDownload({
+                user_id: userId,
+                model_id: modelId,
+                model_name: modelName || `${modelId}.rknn`
+            });
 
-        toast.success('开始下载模型');
+            if (response.data.code === 0) {
+                const taskId = response.data.task_id;
+
+                // 2. 初始化下载任务状态
+                setDownloadTasks(prev => ({
+                    ...prev,
+                    [modelId]: {
+                        taskId,
+                        progress: 0,
+                        status: 'downloading'
+                    }
+                }));
+
+                toast.success('下载任务已创建，正在准备...');
+
+                // 3. 开始轮询下载状态
+                startPollingDownloadStatus(modelId, taskId);
+            } else {
+                toast.error('创建下载任务失败: ' + response.data.msg);
+            }
+        } catch (error) {
+            console.error('创建下载任务失败:', error);
+            toast.error('创建下载任务失败');
+        }
+    };
+
+    // 轮询下载状态
+    const startPollingDownloadStatus = (modelId, taskId) => {
+        // 清除该模型之前的定时器（如果有）
+        if (downloadPollTimers.current[modelId]) {
+            clearInterval(downloadPollTimers.current[modelId]);
+        }
+
+        // 每2秒轮询一次
+        downloadPollTimers.current[modelId] = setInterval(async () => {
+            try {
+                const response = await InferenceAPI.getModelDownloadStatus(taskId);
+
+                // 获取 status，无论 code 是什么值
+                const { status, progress } = response.data;
+
+                // 更新下载任务状态
+                setDownloadTasks(prev => ({
+                    ...prev,
+                    [modelId]: {
+                        ...prev[modelId],
+                        status,
+                        progress: progress || 0
+                    }
+                }));
+
+                // 如果下载完成（后端已完成下载到服务器）
+                if (status === 'completed') {
+                    clearInterval(downloadPollTimers.current[modelId]);
+                    delete downloadPollTimers.current[modelId];
+
+                    toast.success('模型下载完成！已保存到服务器');
+                    onModelConverted();
+
+                    // 1秒后清除下载任务状态
+                    setTimeout(() => {
+                        setDownloadTasks(prev => {
+                            const newTasks = { ...prev };
+                            delete newTasks[modelId];
+                            return newTasks;
+                        });
+                    }, 1000);
+                } else if (status === 'failed' || status === 'error') {
+                    clearInterval(downloadPollTimers.current[modelId]);
+                    delete downloadPollTimers.current[modelId];
+                    toast.error('模型下载失败');
+
+                    // 清除失败的任务状态
+                    setTimeout(() => {
+                        setDownloadTasks(prev => {
+                            const newTasks = { ...prev };
+                            delete newTasks[modelId];
+                            return newTasks;
+                        });
+                    }, 1000);
+                } else if (response.data.code !== 0) {
+                    // 如果返回错误码且不是已处理的状态，也停止轮询
+                    clearInterval(downloadPollTimers.current[modelId]);
+                    delete downloadPollTimers.current[modelId];
+                    toast.error('获取下载状态失败: ' + (response.data.msg || '未知错误'));
+
+                    // 清除任务状态
+                    setTimeout(() => {
+                        setDownloadTasks(prev => {
+                            const newTasks = { ...prev };
+                            delete newTasks[modelId];
+                            return newTasks;
+                        });
+                    }, 1000);
+                }
+            } catch (error) {
+                console.error('查询下载状态失败:', error);
+                // 请求失败时也停止轮询，避免无限重试
+                clearInterval(downloadPollTimers.current[modelId]);
+                delete downloadPollTimers.current[modelId];
+                toast.error('查询下载状态失败');
+
+                // 清除任务状态
+                setTimeout(() => {
+                    setDownloadTasks(prev => {
+                        const newTasks = { ...prev };
+                        delete newTasks[modelId];
+                        return newTasks;
+                    });
+                }, 1000);
+            }
+        }, 500);
     };
 
     const handleDeleteModel = async (modelId) => {
@@ -290,9 +422,9 @@ export default function SensecraftPanel({ onModelConverted }) {
         } else if (status === 'init') {
             return { icon: <Clock size={16} color="#f59e0b" />, text: '初始化', color: '#f59e0b' };
         }
-        //  else if (!isNaN(status)) {
-        //     return { icon: <RefreshCw size={16} color="#3b82f6" />, text: `${status}%`, color: '#3b82f6' };
-        // }
+        else if (!isNaN(status)) {
+            return { icon: <RefreshCw size={16} color="#3b82f6" />, text: `${status}%`, color: '#3b82f6' };
+        }
         return { icon: <Clock size={16} color="#64748b" />, text: '未知', color: '#64748b' };
     };
 
@@ -452,6 +584,43 @@ export default function SensecraftPanel({ onModelConverted }) {
                                 </button>
                             </div>
 
+                            {/* 上传进度条 */}
+                            {converting && uploadProgress > 0 && (
+                                <div style={{
+                                    marginTop: '16px',
+                                    padding: '16px',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#f0f9ff',
+                                    border: '1px solid #bfdbfe'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                        <span style={{ fontSize: '14px', fontWeight: '500', color: '#0369a1' }}>
+                                            上传文件中
+                                        </span>
+                                        <span style={{ fontSize: '14px', color: '#0369a1', fontWeight: '600' }}>
+                                            {uploadProgress}%
+                                        </span>
+                                    </div>
+
+                                    {/* 进度条 */}
+                                    <div style={{
+                                        width: '100%',
+                                        height: '8px',
+                                        backgroundColor: '#e0f2fe',
+                                        borderRadius: '4px',
+                                        overflow: 'hidden'
+                                    }}>
+                                        <div style={{
+                                            width: `${uploadProgress}%`,
+                                            height: '100%',
+                                            backgroundColor: '#3b82f6',
+                                            transition: 'width 0.3s ease',
+                                            boxShadow: '0 0 8px rgba(59, 130, 246, 0.5)'
+                                        }} />
+                                    </div>
+                                </div>
+                            )}
+
                             {/* 当前任务进度 */}
                             {currentTaskId && taskStatus && taskStatus !== 'done' && (
                                 <div style={{
@@ -582,38 +751,74 @@ export default function SensecraftPanel({ onModelConverted }) {
                                                 </div>
 
                                                 {model.status === 'done' && (
-                                                    <button
-                                                        onClick={() => handleDownloadModel(model.model_id)}
-                                                        className="btn btn-primary"
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '8px',
-                                                            fontSize: '13px',
-                                                            padding: '6px 12px',
-                                                            marginLeft: '16px'
-                                                        }}
-                                                    >
-                                                        <Download size={14} />
-                                                        下载
-                                                    </button>
-                                                )}
-                                                {model.status === 'done' && (
-                                                    <button
-                                                        onClick={() => handleDeleteModel(model.model_id)}
-                                                        className="btn btn-danger"
-                                                        style={{
-                                                            display: 'flex',
-                                                            alignItems: 'center',
-                                                            gap: '8px',
-                                                            fontSize: '13px',
-                                                            padding: '6px 12px',
-                                                            marginLeft: '16px'
-                                                        }}
-                                                    >
-                                                        <Trash2 size={14} />
-                                                        删除
-                                                    </button>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginLeft: '16px' }}>
+                                                        {/* 下载进度显示 */}
+                                                        {downloadTasks[model.model_id] ? (
+                                                            <div style={{ minWidth: '200px' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                                    {downloadTasks[model.model_id].status === 'completed' ? (
+                                                                        <CheckCircle size={14} color="#16a34a" />
+                                                                    ) : (
+                                                                        <RefreshCw size={14} className="spin" color="#3b82f6" />
+                                                                    )}
+                                                                    <span style={{
+                                                                        fontSize: '12px',
+                                                                        color: downloadTasks[model.model_id].status === 'completed' ? '#16a34a' : '#3b82f6'
+                                                                    }}>
+                                                                        {downloadTasks[model.model_id].status === 'completed'
+                                                                            ? '已下载到服务器'
+                                                                            : `下载中 ${downloadTasks[model.model_id].progress}%`}
+                                                                    </span>
+                                                                </div>
+                                                                {/* 进度条 */}
+                                                                <div style={{
+                                                                    width: '100%',
+                                                                    height: '4px',
+                                                                    backgroundColor: '#e2e8f0',
+                                                                    borderRadius: '2px',
+                                                                    overflow: 'hidden'
+                                                                }}>
+                                                                    <div style={{
+                                                                        width: `${downloadTasks[model.model_id].progress}%`,
+                                                                        height: '100%',
+                                                                        backgroundColor: downloadTasks[model.model_id].status === 'completed' ? '#16a34a' : '#3b82f6',
+                                                                        transition: 'width 0.3s ease'
+                                                                    }} />
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <button
+                                                                onClick={() => handleDownloadModel(model.model_id, model.prompt)}
+                                                                className="btn btn-primary"
+                                                                style={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    gap: '8px',
+                                                                    fontSize: '13px',
+                                                                    padding: '6px 12px'
+                                                                }}
+                                                            >
+                                                                <Download size={14} />
+                                                                下载
+                                                            </button>
+                                                        )}
+
+                                                        <button
+                                                            onClick={() => handleDeleteModel(model.model_id)}
+                                                            className="btn btn-danger"
+                                                            disabled={!!downloadTasks[model.model_id]}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: '8px',
+                                                                fontSize: '13px',
+                                                                padding: '6px 12px'
+                                                            }}
+                                                        >
+                                                            <Trash2 size={14} />
+                                                            删除
+                                                        </button>
+                                                    </div>
                                                 )}
                                             </div>
                                         );
