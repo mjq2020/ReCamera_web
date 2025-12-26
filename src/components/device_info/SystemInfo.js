@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { DeviceInfoAPI } from '../../contexts/API';
 import { toast } from '../base/Toast';
 import SparkMD5 from 'spark-md5';
@@ -10,6 +10,16 @@ function SystemSetting() {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [uploadStatus, setUploadStatus] = useState(''); // 上传状态文本
     const [uploadingConfig, setUploadingConfig] = useState(false); // 配置上传状态
+
+    // 在线固件更新相关状态
+    const [searchFirmwareVersion, setSearchFirmwareVersion] = useState(false); // 搜索固件版本
+    const [onlineUpdating, setOnlineUpdating] = useState(false); // 在线更新状态
+    const [onlineUpdateProgress, setOnlineUpdateProgress] = useState(0); // 在线更新进度
+    const [onlineUpdateStatus, setOnlineUpdateStatus] = useState(''); // 在线更新状态文本
+    const [isUpgrading, setIsUpgrading] = useState(false); // 是否正在升级（页面锁定状态）
+    const downloadProgressIntervalRef = useRef(null); // 下载进度轮询定时器
+    const upgradeCheckIntervalRef = useRef(null); // 升级检查定时器
+    const [originalFirmwareVersion, setOriginalFirmwareVersion] = useState(''); // 原始固件版本
 
     // 修改密码相关状态
     const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -26,6 +36,13 @@ function SystemSetting() {
         hasSpecialChar: false,
         satisfiedCount: 0
     });
+
+    // 组件卸载时清理定时器
+    useEffect(() => {
+        return () => {
+            clearIntervals();
+        };
+    }, []);
 
     // 分块计算文件的MD5（支持大文件）
     const calculateMD5 = (file, onProgress) => {
@@ -165,6 +182,181 @@ function SystemSetting() {
             toast.error('固件上传失败: ' + (error.message || '未知错误'));
         } finally {
             setUploading(false);
+        }
+    };
+
+    // 清理定时器
+    const clearIntervals = () => {
+        if (downloadProgressIntervalRef.current) {
+            clearInterval(downloadProgressIntervalRef.current);
+            downloadProgressIntervalRef.current = null;
+        }
+        if (upgradeCheckIntervalRef.current) {
+            clearInterval(upgradeCheckIntervalRef.current);
+            upgradeCheckIntervalRef.current = null;
+        }
+    };
+
+    // 查询下载进度
+    const checkDownloadProgress = async () => {
+        try {
+            const response = await DeviceInfoAPI.getFirmwareNetworkStatus();
+            const { sStatus, iPercent, iCurrent, iTotal } = response.data;
+
+            if (sStatus === 'downloading') {
+                // 下载中
+                const currentMB = (iCurrent / (1024 * 1024)).toFixed(2);
+                const totalMB = (iTotal / (1024 * 1024)).toFixed(2);
+                setOnlineUpdateProgress(iPercent);
+                setOnlineUpdateStatus(`正在下载固件: ${currentMB}MB / ${totalMB}MB (${iPercent}%)`);
+            } else if (sStatus === 'success') {
+                // 下载完成，准备升级
+                clearIntervals();
+                setOnlineUpdateProgress(100);
+                setOnlineUpdateStatus('下载完成，正在准备升级...');
+                toast.info('固件下载完成，设备即将开始升级...');
+
+                // 进入升级阶段
+                setTimeout(() => {
+                    startUpgradeMonitoring();
+                }, 2000);
+            } else if (sStatus === 'error') {
+                // 下载失败
+                clearIntervals();
+                setOnlineUpdating(false);
+                setOnlineUpdateStatus('下载失败');
+                toast.error('固件下载失败');
+            }
+        } catch (error) {
+            console.error('查询下载进度失败:', error);
+            // 不中断轮询，继续尝试
+        }
+    };
+
+    // 开始升级监控
+    const startUpgradeMonitoring = () => {
+        setIsUpgrading(true);
+        setOnlineUpdateStatus('正在升级固件，请勿断电或关闭页面...');
+        toast.info('设备正在升级，请勿断电或关闭页面。升级期间设备将无响应，这是正常现象。');
+
+        // 每5秒检查一次固件版本
+        upgradeCheckIntervalRef.current = setInterval(async () => {
+            try {
+                const response = await DeviceInfoAPI.getDeviceInfo();
+                const currentVersion = response.data.sFirmwareVersion;
+
+                // 对比固件版本
+                if (currentVersion !== originalFirmwareVersion) {
+                    // 版本已更新，升级成功
+                    clearIntervals();
+                    setIsUpgrading(false);
+                    setOnlineUpdating(false);
+                    setOnlineUpdateStatus('升级成功！');
+                    setOnlineUpdateProgress(100);
+                    toast.success(`固件升级成功！版本已从 ${originalFirmwareVersion} 更新到 ${currentVersion}`);
+
+                    // 2秒后清除状态
+                    setTimeout(() => {
+                        setOnlineUpdateStatus('');
+                        setOnlineUpdateProgress(0);
+                    }, 3000);
+                }
+            } catch (error) {
+                // 升级期间设备无响应是正常的，继续轮询
+                console.log('设备升级中，暂无响应...');
+            }
+        }, 5000);
+
+        // 设置超时时间（10分钟）
+        setTimeout(() => {
+            if (isUpgrading) {
+                clearIntervals();
+                setIsUpgrading(false);
+                setOnlineUpdating(false);
+                toast.warning('升级超时，请手动检查设备状态');
+                setOnlineUpdateStatus('升级超时');
+            }
+        }, 10 * 60 * 1000);
+    };
+
+    const handleOnlineFirmwareUpdate = async () => {
+        if (onlineUpdating || isUpgrading) {
+            toast.warning('固件更新正在进行中，请稍候...');
+            return;
+        }
+
+        try {
+            // 1. 获取当前固件版本
+            setSearchFirmwareVersion(true);
+            const deviceInfoResponse = await DeviceInfoAPI.getDeviceInfo();
+            const currentFirmwareVersion = deviceInfoResponse.data.sFirmwareVersion;
+            setOriginalFirmwareVersion(currentFirmwareVersion);
+            console.log('当前固件版本:', currentFirmwareVersion);
+
+            // 2. 第一次请求：检查更新并获取确认令牌
+            setOnlineUpdateStatus('正在检查更新...');
+            const response = await DeviceInfoAPI.postFirmwareNetwork();
+
+            if (response.data.code !== 0) {
+                toast.error('检查更新失败: ' + (response.data.message || '未知错误'));
+                setSearchFirmwareVersion(false);
+                return;
+            }
+
+            const { iUpdateAvailable, sCurrentVersion, sLatestVersion, sConfirmToken, sUpdating } = response.data;
+            if (!sUpdating) {
+                // 检查是否有可用更新
+                if (!iUpdateAvailable) {
+                    toast.info(`当前已是最新版本 (${sCurrentVersion})`);
+                    setOnlineUpdateStatus('');
+                    setSearchFirmwareVersion(false);
+                    return;
+                }
+
+                // 3. 显示确认对话框
+                const updateMessage = `检测到新版本！\n当前版本: ${sCurrentVersion}\n最新版本: ${sLatestVersion}\n\n确定要更新固件吗？`;
+                const confirmed = await toast.confirm(updateMessage);
+
+                if (!confirmed) {
+                    setOnlineUpdateStatus('');
+                    setSearchFirmwareVersion(false);
+                    return;
+                }
+
+                // 4. 第二次请求：确认更新，开始下载
+                setSearchFirmwareVersion(false);
+                setOnlineUpdating(true);
+                setOnlineUpdateProgress(0);
+                setOnlineUpdateStatus('正在启动固件下载...');
+                toast.info('开始下载固件...');
+
+                const confirmResponse = await DeviceInfoAPI.postFirmwareNetwork({
+                    sConfirmToken: sConfirmToken
+                });
+
+                if (confirmResponse.data.code !== 0) {
+                    throw new Error(confirmResponse.data.message || '启动下载失败');
+                }
+            } else {
+                setSearchFirmwareVersion(false);
+            }
+
+            // 5. 开始轮询下载进度
+            toast.success('固件下载已启动！');
+            setOnlineUpdateStatus('正在下载固件...');
+
+            // 每2秒查询一次下载进度
+            downloadProgressIntervalRef.current = setInterval(checkDownloadProgress, 2000);
+
+            // 立即执行一次
+            checkDownloadProgress();
+
+        } catch (error) {
+            console.error('固件更新失败:', error);
+            clearIntervals();
+            setOnlineUpdating(false);
+            setOnlineUpdateStatus('');
+            toast.error('固件更新失败: ' + (error.message || '未知错误'));
         }
     };
 
@@ -573,14 +765,14 @@ function SystemSetting() {
                         <button
                             className='btn btn-primary'
                             onClick={exportConfig}
-                            disabled={uploadingConfig}
+                            disabled={uploadingConfig || isUpgrading}
                         >
                             导出设置
                         </button>
                         <button
                             className='btn btn-primary'
                             onClick={handleImportConfig}
-                            disabled={uploadingConfig}
+                            disabled={uploadingConfig || isUpgrading}
                         >
                             {uploadingConfig ? '导入中...' : '导入设置'}
                         </button>
@@ -644,11 +836,16 @@ function SystemSetting() {
                 </div>
                 <div className='card-body'>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                        <button className='btn btn-primary'>在线更新固件</button>
+                        <button className='btn btn-primary'
+                            onClick={handleOnlineFirmwareUpdate}
+                            disabled={uploading || onlineUpdating || isUpgrading || searchFirmwareVersion}
+                        >
+                            {searchFirmwareVersion ? "搜索固件版本..." : onlineUpdating ? '更新中...' : '在线更新固件'}
+                        </button>
                         <button
                             className='btn btn-primary'
                             onClick={handleLocalFirmwareUpdate}
-                            disabled={uploading}
+                            disabled={uploading || onlineUpdating || isUpgrading || searchFirmwareVersion}
                         >
                             {uploading ? '上传中...' : '本地更新固件'}
                         </button>
@@ -660,6 +857,7 @@ function SystemSetting() {
                         style={{ display: 'none' }}
                         onChange={handleFileChange}
                     />
+                    {/* 本地上传进度 */}
                     {uploading && (
                         <div style={{ marginTop: "15px", width: "100%" }}>
                             <div style={{
@@ -702,6 +900,61 @@ function SystemSetting() {
                             </div>
                         </div>
                     )}
+                    {/* 在线更新进度 */}
+                    {(onlineUpdating || isUpgrading) && (
+                        <div style={{ marginTop: "15px", width: "100%" }}>
+                            <div style={{
+                                marginBottom: "8px",
+                                fontSize: "14px",
+                                color: isUpgrading ? "#ff9800" : "#666",
+                                textAlign: "center",
+                                fontWeight: isUpgrading ? "bold" : "normal"
+                            }}>
+                                {onlineUpdateStatus || '处理中...'}
+                            </div>
+                            <div style={{
+                                width: "100%",
+                                height: "24px",
+                                backgroundColor: "#e0e0e0",
+                                borderRadius: "12px",
+                                overflow: "hidden",
+                                boxShadow: "inset 0 1px 3px rgba(0,0,0,0.1)"
+                            }}>
+                                <div style={{
+                                    width: `${onlineUpdateProgress}%`,
+                                    height: "100%",
+                                    backgroundColor: isUpgrading ? "#ff9800" : "#2196F3",
+                                    transition: "width 0.3s ease",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "flex-end",
+                                    paddingRight: "8px",
+                                    boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
+                                    animation: isUpgrading ? "pulse 2s ease-in-out infinite" : "none"
+                                }}>
+                                    {onlineUpdateProgress > 10 && !isUpgrading && (
+                                        <span style={{
+                                            color: "white",
+                                            fontSize: "12px",
+                                            fontWeight: "bold"
+                                        }}>
+                                            {onlineUpdateProgress}%
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            {isUpgrading && (
+                                <div style={{
+                                    marginTop: "8px",
+                                    fontSize: "12px",
+                                    color: "#ff9800",
+                                    textAlign: "center"
+                                }}>
+                                    ⚠️ 升级期间请勿关闭页面或断电
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -720,6 +973,7 @@ function SystemSetting() {
                                 minWidth: '120px'
                             }}
                             onClick={rebootDevice}
+                            disabled={isUpgrading}
                         >
                             重启设备
                         </button>
@@ -731,6 +985,7 @@ function SystemSetting() {
                                 minWidth: '120px'
                             }}
                             onClick={updatePassword}
+                            disabled={isUpgrading}
                         >
                             修改密码
                         </button>
@@ -742,6 +997,7 @@ function SystemSetting() {
                                 minWidth: '120px'
                             }}
                             onClick={factoryReset}
+                            disabled={isUpgrading}
                         >
                             恢复出厂设置
                         </button>
