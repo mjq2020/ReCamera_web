@@ -2,10 +2,20 @@ import axios from 'axios'
 import { urls } from './urls'
 import { toast } from '../components/base/Toast'
 import { navigateTo } from '../utils/navigation'
+import GetCookieToken from '../components/base/LocalData';
 
 // 用于防止重复处理401错误的标志
 let isHandlingUnauthorized = false;
 
+const getCookieToken = () => {
+    const value = `; ${document.cookie}`;
+    console.log('value', document.cookie)
+    const parts = value.split(`; token=`);
+    if (parts.length === 2) {
+        return parts.pop().split(';').shift();
+    }
+    return null;
+}
 // 处理未授权的情况
 const handleUnauthorized = () => {
     // 如果已经在处理中，直接返回，避免重复提示
@@ -47,7 +57,15 @@ const axiosInstance = axios.create(
     }
 )
 axiosInstance.interceptors.request.use(config => {
-    config.headers.Cookie = `token=${localStorage.getItem('token')}`
+    // 查看请求是否含有token的cookie
+    // if (!config.url.includes("/login")) {
+    //     const token = getCookieToken();
+    //     if (!token) {
+    //         console.log('没有token');
+    //         handleUnauthorized();
+    //     }
+    // }
+
     if (config.url.includes("/relay")) {
         config.baseURL = config.baseURL.replace("/cgi-bin/entry.cgi", "")
     } else if (config.url.includes("/api")) {
@@ -58,29 +76,36 @@ axiosInstance.interceptors.request.use(config => {
 
 axiosInstance.interceptors.response.use(
     response => {
-        if (response.config.method != 'get') {
-            console.log(response.status)
-            if (response.status === 200) {
-                const data = response.data
-                if ('code' in data) {
-                    if (data.code === SUCCESS_CODE || data.code === 200) {
-                        return response
-                    } else {
-                        toast.error('请求失败: 错误码' + data.code + ' ' + data.message)
-                        return Promise.reject(data)
-                    }
-
-                } else {
+        if (response.status === 200) {
+            const data = response.data
+            if ('code' in data) {
+                if (data.code === SUCCESS_CODE || data.code === 200) {
                     return response
+                } else if (data.code === 401) {
+                    console.log('401', data)
+                    handleUnauthorized()
+                } else if (data.code === 501) {
+                    toast.error('接口未实现');
+                    return Promise.reject(data)
                 }
+                else {
+                    toast.error('请求失败: 错误码' + data.code + ' ' + data.message)
+                    return Promise.reject(data)
+                }
+
             } else {
-                toast.error('请求失败: 错误码' + response.status + ' ' + response.statusText)
-                return Promise.reject(response)
+                return response
             }
+        } else {
+            toast.error('请求失败: 错误码' + response.status + ' ' + response.statusText)
+            return Promise.reject(response)
         }
+
         return response
     },
     error => {
+        console.log('error', error)
+        console.log('error.response', error.response)
         if (error.response) {
             const { status, data } = error.response;
 
@@ -91,6 +116,7 @@ axiosInstance.interceptors.response.use(
                     break;
                 case 401:
                     // 处理未授权，toast提示已在handleUnauthorized中统一处理
+                    console.log('401', data)
                     handleUnauthorized();
                     break;
                 case 403:
@@ -265,9 +291,9 @@ class DeviceInfoAPI {
         axiosInstance.post(urls.systemFirmwareUpgrade, data)
     }
 
-    static postFirmwareNetwork(data) {
-        axiosInstance.post(urls.systemFirmwareNetwork, data)
-    }
+    // static postFirmwareNetwork(data) {
+    //     axiosInstance.post(urls.systemFirmwareNetwork, data)
+    // }
 
     static postReboot() {
         return axiosInstance.post(urls.systemReboot)
@@ -284,6 +310,31 @@ class DeviceInfoAPI {
     static putPassword(data) {
         return axiosInstance.put(urls.systemPassword, data)
     }
+    static postFirmwareNetwork(data = null) {
+        if (data === null) {
+            // 第一次请求：检查更新（不发送payload，只有params）
+            return axiosInstance.post(urls.systemFirmwareNetwork, undefined, {
+                params: {
+                    "upload-type": "network"
+                }
+            });
+        } else {
+            // 第二次请求：确认更新（发送payload）
+            return axiosInstance.post(urls.systemFirmwareNetwork, data, {
+                params: {
+                    "upload-type": "network"
+                },
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        }
+    }
+
+    static getFirmwareNetworkStatus() {
+        return axiosInstance.get(urls.systemFirmwareNetworkProgress)
+    }
+
 
     // 开始上传固件
     static startFirmwareUpload() {
@@ -579,6 +630,15 @@ class InferenceAPI {
             }
         })
     }
+    // 获取模型下载状态
+    static getModelDownloadStatus(taskId) {
+        return axiosInstance.get(urls.modelDownloadStatus(taskId))
+    }
+
+    // 请求后端下载模型
+    static postModelDownload(data) {
+        return axiosInstance.post(urls.modelGetModel, data)
+    }
 
     // 完成模型上传
     static finishModelUpload(fileId, fileName, md5sum) {
@@ -660,16 +720,19 @@ class TerminalLogAPI {
 class SensecraftAPI {
     // 解析 token 获取 user_id
     static parseToken(token) {
-        return axiosInstance.post(urls.sensecraftParseToken, { headers: { Authorization: token } })
+        return axiosInstance.post(urls.sensecraftParseToken, undefined, {
+            headers: { Authorization: token }
+        })
     }
 
     // 创建模型转换任务
-    static createTask(formData) {
+    static createTask(formData, onUploadProgress) {
         return axiosInstance.post(urls.sensecraftCreateTask, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data'
             },
-            timeout: 60000 // 上传可能需要更长时间
+            timeout: 60000, // 上传可能需要更长时间
+            onUploadProgress: onUploadProgress // 上传进度回调
         })
     }
 

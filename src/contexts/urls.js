@@ -5,7 +5,8 @@ export const urls = {
     systemTime: "/system/time",
     systemResourceInfo: "/system/resource-info",
     systemFirmwareUpgrade: "/system/firmware-upgrade",
-    systemFirmwareNetwork: "/system/firmware-network",
+    systemFirmwareNetwork: "/system/firmware-upgrade",
+    systemFirmwareNetworkProgress: "/system/firmware-download-progress",
     systemReboot: "/system/reboot",
     systemFactoryReset: "/system/factory-reset",
     systemPassword: "/system/password",
@@ -24,7 +25,7 @@ export const urls = {
 
     // log and Terminal
     wsSystemTerminal: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/system/terminal",
-    wsSystemLogs: (token) => (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/system/logs?token=" + token,
+    wsSystemLogs: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/system/logs",
 
     // AI inference
     modelList: "/model/list",
@@ -33,7 +34,9 @@ export const urls = {
     modelInfo: "/model/info",
     modelAlgo: "/model/algorithm",
     modelInference: "/model/inference",
-    wsInferenceResults: (token) => (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/inference/results?token=" + token,
+    modelGetModel: "/model/get_model",
+    modelDownloadStatus: (task_id)=> `/model/download_status?task_id=${task_id}`,
+    wsInferenceResults: (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/inference/results",
     nofifyConfig: "/notify/cfg",
 
     // Live Settings - Video
@@ -74,6 +77,6 @@ export const urls = {
     sensecraftCreateTask: "/v1/api/create_task",
     sensecraftTaskStatus: "/v1/api/train_status",
     sensecraftModelList: "/v1/api/get_training_records",
-    sensecraftDownloadModel: "/v1/api/get_model",
+    sensecraftDownloadModel: "v1/api/get_model",
     sensecraftDeleteModel: "/v1/api/del_model",
 };

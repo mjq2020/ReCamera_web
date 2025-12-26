@@ -68,7 +68,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-box">
         <div className="login-header">
-          <h1>RC2Web 系统</h1>
+          <h1>reCameraV2 WEB系统</h1>
           <p>请登录以继续</p>
         </div>
 

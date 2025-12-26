@@ -3,17 +3,17 @@ export const translations = {
   zh: {
     // 应用标题
     appTitle: 'ReCamera2',
-    
+
     // 侧边栏菜单
     sidebar: {
       preview: '实时预览',
       deviceInfo: '设备信息',
-      liveView: '实时画面',
+      liveView: '画面设置',
       recordSettings: '录制设置',
       aiInference: 'AI推理',
       terminal: '终端'
     },
-    
+
     // 设备信息页面
     deviceInfo: {
       title: '设备信息',
@@ -37,10 +37,10 @@ export const translations = {
       restartDevice: '重启设备',
       factoryReset: '恢复出厂设置'
     },
-    
-    // 实时画面页面
+
+    // 画面设置页面
     liveView: {
-      title: '实时画面',
+      title: '画面设置',
       description: '查看摄像头实时视频流',
       playing: '实时视频流',
       stopped: '点击播放按钮开始预览',
@@ -59,7 +59,7 @@ export const translations = {
       low: '低',
       applySettings: '应用设置'
     },
-    
+
     // 录制设置页面
     recordSettings: {
       title: '录制设置',
@@ -93,7 +93,7 @@ export const translations = {
       saveSettings: '保存设置',
       reset: '重置'
     },
-    
+
     // AI推理页面
     aiInference: {
       title: 'AI推理配置',
@@ -105,7 +105,7 @@ export const translations = {
       segmentation: '图像分割 (Segmentation)',
       keypoint: '关键点检测 (Keypoint Detection)',
       classification: '图像分类 (Classification)',
-      
+
       // 目标检测
       detectionConfig: '目标检测配置',
       modelSelect: '模型选择',
@@ -115,7 +115,7 @@ export const translations = {
       showBoxes: '显示检测框',
       showLabels: '显示标签',
       showConfidence: '显示置信度',
-      
+
       // 图像分割
       segmentationConfig: '图像分割配置',
       segmentationModel: '分割模型',
@@ -123,7 +123,7 @@ export const translations = {
       segmentationType: '分割类型',
       instanceSeg: '实例分割',
       semanticSeg: '语义分割',
-      
+
       // 关键点检测
       keypointConfig: '关键点检测配置',
       keypointModel: '关键点模型',
@@ -134,7 +134,7 @@ export const translations = {
       keypointCount: '关键点数量',
       showSkeleton: '显示骨架连接',
       showKeypoints: '显示关键点',
-      
+
       // 图像分类
       classificationConfig: '图像分类配置',
       classificationModel: '分类模型',
@@ -142,26 +142,26 @@ export const translations = {
       dataset: '分类数据集',
       imagenet: 'ImageNet-1K',
       customDataset: '自定义数据集',
-      
+
       // 推理性能
       inferencePerformance: '推理性能',
       inferenceDevice: '推理设备',
       inputSize: '输入尺寸',
       batchSize: '批处理大小',
       inferenceInterval: '推理间隔（帧）',
-      
+
       // 实时统计
       realtimeStats: '实时统计',
       inferenceSpeed: '推理速度',
       avgLatency: '平均延迟',
       detectedObjects: '检测对象数',
       gpuUsage: 'GPU占用率',
-      
+
       saveConfig: '保存配置',
       testInference: '测试推理',
       exportModel: '导出模型'
     },
-    
+
     // 终端页面
     terminal: {
       title: '终端控制台',
@@ -176,7 +176,7 @@ export const translations = {
       welcomeMessage: 'ReCamera2 终端 v1.0.0',
       helpMessage: '输入 "help" 查看可用命令'
     },
-    
+
     // 通用
     common: {
       language: '语言',
@@ -185,11 +185,11 @@ export const translations = {
       dark: '暗色'
     }
   },
-  
+
   en: {
     // App title
     appTitle: 'ReCamera2',
-    
+
     // Sidebar menu
     sidebar: {
       preview: 'Live Preview',
@@ -199,7 +199,7 @@ export const translations = {
       aiInference: 'AI Inference',
       terminal: 'Terminal'
     },
-    
+
     // Device Info page
     deviceInfo: {
       title: 'Device Information',
@@ -223,7 +223,7 @@ export const translations = {
       restartDevice: 'Restart Device',
       factoryReset: 'Factory Reset'
     },
-    
+
     // Live View page
     liveView: {
       title: 'Live View',
@@ -245,7 +245,7 @@ export const translations = {
       low: 'Low',
       applySettings: 'Apply Settings'
     },
-    
+
     // Record Settings page
     recordSettings: {
       title: 'Record Settings',
@@ -279,7 +279,7 @@ export const translations = {
       saveSettings: 'Save Settings',
       reset: 'Reset'
     },
-    
+
     // AI Inference page
     aiInference: {
       title: 'AI Inference',
@@ -291,7 +291,7 @@ export const translations = {
       segmentation: 'Segmentation',
       keypoint: 'Keypoint Detection',
       classification: 'Classification',
-      
+
       // Detection
       detectionConfig: 'Detection Configuration',
       modelSelect: 'Model',
@@ -301,7 +301,7 @@ export const translations = {
       showBoxes: 'Show Boxes',
       showLabels: 'Show Labels',
       showConfidence: 'Show Confidence',
-      
+
       // Segmentation
       segmentationConfig: 'Segmentation Configuration',
       segmentationModel: 'Model',
@@ -309,7 +309,7 @@ export const translations = {
       segmentationType: 'Segmentation Type',
       instanceSeg: 'Instance Segmentation',
       semanticSeg: 'Semantic Segmentation',
-      
+
       // Keypoint
       keypointConfig: 'Keypoint Configuration',
       keypointModel: 'Model',
@@ -320,7 +320,7 @@ export const translations = {
       keypointCount: 'Keypoint Count',
       showSkeleton: 'Show Skeleton',
       showKeypoints: 'Show Keypoints',
-      
+
       // Classification
       classificationConfig: 'Classification Configuration',
       classificationModel: 'Model',
@@ -328,26 +328,26 @@ export const translations = {
       dataset: 'Dataset',
       imagenet: 'ImageNet-1K',
       customDataset: 'Custom Dataset',
-      
+
       // Performance
       inferencePerformance: 'Inference Performance',
       inferenceDevice: 'Device',
       inputSize: 'Input Size',
       batchSize: 'Batch Size',
       inferenceInterval: 'Inference Interval (frames)',
-      
+
       // Stats
       realtimeStats: 'Realtime Statistics',
       inferenceSpeed: 'Inference Speed',
       avgLatency: 'Avg Latency',
       detectedObjects: 'Detected Objects',
       gpuUsage: 'GPU Usage',
-      
+
       saveConfig: 'Save Config',
       testInference: 'Test Inference',
       exportModel: 'Export Model'
     },
-    
+
     // Terminal page
     terminal: {
       title: 'Terminal Console',
@@ -362,7 +362,7 @@ export const translations = {
       welcomeMessage: 'ReCamera2 Terminal v1.0.0',
       helpMessage: 'Type "help" to see available commands'
     },
-    
+
     // Common
     common: {
       language: 'Language',
