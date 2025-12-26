@@ -5,10 +5,10 @@ import requests
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from pydantic import BaseModel
-
+from fastapi.responses import StreamingResponse
 from ..dependencies import require_auth
 
-router = APIRouter(prefix="/cgi-bin/entry.cgi/sensecraft", tags=["sensecraft"])
+router = APIRouter(prefix="", tags=["sensecraft"])
 
 # 配置
 SENSECRAFT_BASE_URL = "https://test-sensecraft-train-api.seeed.cc"
@@ -19,14 +19,14 @@ SENSECRAFT_LOGIN_API = "https://sensecraft-hmi-api.seeed.cc/api/v1/user/login_to
 
 class TokenParseRequest(BaseModel):
     """解析 token 获取 user_id 的请求"""
-    token: str
+    headers: dict
 
 
 class TokenParseResponse(BaseModel):
     """解析 token 的响应"""
     code: int = 0
     message: str = "success"
-    data: dict
+    result: dict
 
 
 class CreateTaskRequest(BaseModel):
@@ -59,7 +59,7 @@ class ModelListResponse(BaseModel):
 
 # ==================== API Endpoints ====================
 
-@router.post("/parse-token", response_model=TokenParseResponse)
+@router.post("/api/v1/user/login_token", response_model=TokenParseResponse)
 async def parse_token(
     payload: TokenParseRequest,
     _: str = Depends(require_auth)
@@ -71,7 +71,7 @@ async def parse_token(
     """
     try:
         headers = {
-            "Authorization": payload.token
+            "Authorization": payload.headers.get("Authorization")
         }
         
         response = requests.post(SENSECRAFT_LOGIN_API, headers=headers)
@@ -88,9 +88,9 @@ async def parse_token(
         return TokenParseResponse(
             code=0,
             message="success",
-            data={
+            result={
                 "user_id": user_id,
-                "token": payload.token
+                "token": payload.headers.get("Authorization")
             }
         )
         
@@ -98,7 +98,7 @@ async def parse_token(
         raise HTTPException(status_code=500, detail=f"请求 Sensecraft API 失败: {str(e)}")
 
 
-@router.post("/create-task", response_model=CreateTaskResponse)
+@router.post("/v1/api/create_task", response_model=CreateTaskResponse)
 async def create_conversion_task(
     user_id: str = Form(...),
     framework_type: int = Form(9),
@@ -158,7 +158,7 @@ async def create_conversion_task(
         raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")
 
 
-@router.get("/task-status", response_model=TaskStatusResponse)
+@router.get("/v1/api/train_status", response_model=TaskStatusResponse)
 async def get_task_status(
     user_id: str = Query(...),
     model_id: str = Query(...),
@@ -189,7 +189,7 @@ async def get_task_status(
         raise HTTPException(status_code=500, detail=f"查询状态失败: {str(e)}")
 
 
-@router.get("/model-list", response_model=ModelListResponse)
+@router.get("/v1/api/get_training_records", response_model=ModelListResponse)
 async def get_model_list(
     user_id: str = Query(...),
     framework_type: int = Query(9),
@@ -229,7 +229,7 @@ async def get_model_list(
         raise HTTPException(status_code=500, detail=f"查询模型列表失败: {str(e)}")
 
 
-@router.get("/download-model")
+@router.get("/v1/api/get_model")
 async def download_model(
     user_id: str = Query(...),
     model_id: str = Query(...),
@@ -256,7 +256,6 @@ async def download_model(
         response.raise_for_status()
         
         # 返回文件流
-        from fastapi.responses import StreamingResponse
         
         return StreamingResponse(
             response.iter_content(chunk_size=8192),
@@ -268,3 +267,29 @@ async def download_model(
         
     except requests.exceptions.RequestException as e:
         raise HTTPException(status_code=500, detail=f"下载模型失败: {str(e)}")
+
+
+@router.get("/v1/api/del_model")
+async def delete_model(
+    user_id: str = Query(...),
+    model_id: str = Query(...),
+    _: str = Depends(require_auth)
+) -> dict:
+    """
+    删除模型
+    """
+    try:
+        url = f"{SENSECRAFT_BASE_URL}/v1/api/del_model"
+        params = {
+            "user_id": user_id,
+            "model_id": model_id
+        }
+        
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        
+        result = response.json()
+        
+        return result
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"删除模型失败: {str(e)}")
