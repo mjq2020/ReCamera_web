@@ -161,7 +161,7 @@ export default function InferenceOutput() {
                 return;
             }
 
-            const ws = new WebSocket(urls.wsInferenceResults(token));
+            const ws = new WebSocket(urls.wsInferenceResults);
             wsRef.current = ws;
             ws.onopen = () => {
                 console.log("WebSocket连接成功！");

@@ -5,7 +5,7 @@ import ModelUpload from './ModelUpload';
 import { Trash2, Settings, Box, AlertCircle, Upload, Square, SquareCheckBig, CheckCheck, Check } from 'lucide-react';
 import toast from '../base/Toast';
 
-export default function ModelManage({ onModelDeleted }) {
+export default function ModelManage({ onModelDeleted, modelList = [] }) {
     const [models, setModels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedModel, setSelectedModel] = useState(null);
@@ -121,7 +121,7 @@ export default function ModelManage({ onModelDeleted }) {
                                 color: 'var(--text-secondary)',
                                 fontWeight: 'normal'
                             }}>
-                                共 {models.length} 个模型
+                                共 {modelList.length} 个模型
                             </p>
                         </div>
                     </div>
@@ -141,7 +141,7 @@ export default function ModelManage({ onModelDeleted }) {
                     </button>
                 </div>
                 <div className="card-body">
-                    {models.length === 0 ? (
+                    {modelList.length === 0 ? (
                         <div style={{
                             textAlign: 'center',
                             padding: '40px',
@@ -170,7 +170,7 @@ export default function ModelManage({ onModelDeleted }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {models.map((item, index) => (
+                                    {modelList.map((item, index) => (
                                         <tr key={index}>
                                             <td style={{ fontWeight: '600' }}>{item.model}</td>
                                             <td>{item.modelInfo?.name || '-'}</td>

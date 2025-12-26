@@ -14,7 +14,7 @@ export default function InferencePage() {
         sModel: '',
         iFPS: 30
     });
-    const [models, setModels] = useState([]);
+    const [modelList, setModelList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -32,7 +32,7 @@ export default function InferencePage() {
     const loadModels = async () => {
         try {
             const response = await InferenceAPI.getModelList();
-            setModels(response.data || []);
+            setModelList(response.data || []);
         } catch (error) {
             console.error('获取模型列表失败:', error);
         }
@@ -119,7 +119,7 @@ export default function InferencePage() {
             <SensecraftPanel onModelConverted={loadModels} />
 
             {/* 模型管理 */}
-            <ModelManage onModelDeleted={loadModels} />
+            <ModelManage onModelDeleted={loadModels} modelList={modelList} />
 
             {/* 推理配置 */}
             <div className="content-card">
@@ -162,9 +162,9 @@ export default function InferencePage() {
                                 className="form-control"
                                 value={inferenceStatus.sModel}
                                 onChange={(e) => handleChange('sModel', e.target.value)}
-                                disabled={models.length === 0}
+                                disabled={modelList.length === 0}
                             >
-                                {models
+                                {modelList
                                     .filter(item => item.modelInfo) // 只显示有配置信息的模型
                                     .map((item, index) => (
                                         <option key={index} value={item.model}>
@@ -172,12 +172,12 @@ export default function InferencePage() {
                                         </option>
                                     ))}
                             </select>
-                            {models.length === 0 && (
+                            {modelList.length === 0 && (
                                 <p style={{ fontSize: '12px', color: '#f59e0b', marginTop: '4px' }}>
                                     暂无可用模型，请先上传并配置模型
                                 </p>
                             )}
-                            {models.length > 0 && models.filter(item => item.modelInfo).length === 0 && (
+                            {modelList.length > 0 && modelList.filter(item => item.modelInfo).length === 0 && (
                                 <p style={{ fontSize: '12px', color: '#f59e0b', marginTop: '4px' }}>
                                     所有模型均未配置信息，请先配置模型后再使用
                                 </p>
