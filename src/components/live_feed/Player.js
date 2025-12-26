@@ -7,7 +7,7 @@ const MAX_MASK_COUNT = 6; // 最多支持6个遮盖区域
 const WS_URL = (() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host; // 包含端口号
-    return `${protocol}//${host}/api/ws?src=main`;
+    return `${protocol}//${host}/go2rtc/api/ws?src=main`;
 })();
 
 export default function Player({ maskSettings, isDrawingMode, onMaskDrawn, mainStream, osdSettings, isOsdEditMode, onOsdUpdate }) {

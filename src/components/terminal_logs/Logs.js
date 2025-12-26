@@ -14,7 +14,7 @@ const LogEntry = memo(({ log, formatTimestamp }) => {
                     {formatTimestamp(log.timestamp)}
                 </span>
             </div>
-            <span className="log-data">{log.data}</span>
+            <span className="log-data">[{log.level.toUpperCase()}]{log.data}</span>
         </div>
     );
 });
@@ -64,7 +64,7 @@ export default function SystemLogViewer() {
                 setWsStatus('error');
                 return;
             }
-            const ws = new WebSocket(urls.wsSystemLogs(token));
+            const ws = new WebSocket(urls.wsSystemLogs);
             wsRef.current = ws;
 
             ws.onopen = () => {
@@ -200,7 +200,7 @@ export default function SystemLogViewer() {
     // 下载日志
     const handleDownloadLogs = () => {
         const logText = filteredLogs
-            .map(log => `[${log.timestamp}] ${log.data}`)
+            .map(log => `[${log.timestamp}] [${log.level.toUpperCase()}] ${log.data}`)
             .join('\n');
 
         const blob = new Blob([logText], { type: 'text/plain' });

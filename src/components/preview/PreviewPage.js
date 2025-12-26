@@ -40,7 +40,7 @@ export default function PreviewPage() {
         const host = window.location.host;
         // 根据码流选择不同的源
         const src = stream === 'main' ? 'main' : 'sub';
-        return `${protocol}//${host}/api/ws?src=${src}`;
+        return `${protocol}//${host}/go2rtc/api/ws?src=${src}`;
     }, []);
 
     // 自动播放视频（改进 Edge 兼容性）
